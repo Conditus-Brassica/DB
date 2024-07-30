@@ -21,6 +21,7 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     mv ./landmarks.json /import &&\
     mv ./map_sectors.json /import &&\
     mv ./regions.json /import
+    mv ./import_kb.py ../
 
 # Neo4j settings
 ENV NEO4J_AUTH=neo4j/ostisGovno \
