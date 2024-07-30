@@ -32,7 +32,7 @@ ENV NEO4J_AUTH=neo4j/ostisGovno \
 VOLUME $HOME/neo4j/data:/data
 
 EXPOSE 7474
-EXPOSE 7687
+EXPOSE 7678
 
 ENTRYPOINT /run/entrypoint.sh &&\
     . .venv/bin/activate &&\
