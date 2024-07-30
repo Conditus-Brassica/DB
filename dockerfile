@@ -4,12 +4,10 @@ WORKDIR service
 
 # install python (common)
 RUN apt-get install bash &&\
-    chsh -s /bin/bash &&\
-    apt-get install software-properties-common &&\
-    add-apt-repository ppa:deadsnakes/ppa &&\ 
+    chsh -s /bin/bash
 
 RUN apt-get update &&\
-    apt-get install python3.11 &&\
+    apt-get install python3 &&\
     apt-get clean
 
 # clone data
