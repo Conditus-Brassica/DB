@@ -12,7 +12,7 @@ RUN apt-get update &&\
     apt-get clean
 
 # clone data
-RUN git clone git@github.com:Conditus-Brassica/DB.git &&\
+RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     python -m venv .venv &&\
     source ./.venv/bin/activate &&\
