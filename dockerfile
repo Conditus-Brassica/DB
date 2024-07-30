@@ -3,8 +3,9 @@ FROM neo4j:5.18.0
 WORKDIR service
 
 # install python (common)
-RUN apt-get install bash &&\
-    chsh -s /bin/bash &&\
+RUN apt-get install bash 
+
+RUN chsh -s /bin/bash &&\    
     apt-get update &&\
     apt-get apt-get install python3.11 &&\
     apt-get clean
