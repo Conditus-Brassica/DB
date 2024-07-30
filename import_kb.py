@@ -4,13 +4,6 @@ import sys
 import os
 import pathlib
 
-# Import of neo4j is after defining of help message
-
-
-DEPENDENCIES_ARE_FINE = True
-neo4j_version = "5.18.0"
-
-
 
 AVAILABLE_ARGS = [
     "user", "password",
