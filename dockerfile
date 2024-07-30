@@ -12,7 +12,7 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-# clone data
+# clone data (../ is dir service in this script)
 RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     python3 -m venv .venv &&\
@@ -20,7 +20,7 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     pip install -r requirements.txt &&\
     mv ./landmarks.json /import &&\
     mv ./map_sectors.json /import &&\
-    mv ./regions.json /import
+    mv ./regions.json /import &&\
     mv ./import_kb.py ../
 
 # Neo4j settings
