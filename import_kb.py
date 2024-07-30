@@ -3,135 +3,14 @@ import datetime
 import sys
 import os
 import pathlib
+from neo4j import GraphDatabase, Driver, exceptions
 
 
 AVAILABLE_ARGS = [
-    "user", "password",
-    "docker_image", "host", "port", "container_name", "stop_container",
-    "import_volume", "data_volume",
-    "regions_location", "landmarks_location", "map_sectors_location",
+    "user", "password", "host", "port",
     "regions_filename", "landmarks_filename", "map_sectors_filename",
     "base_dir"
 ]
-DEFAULT_VALUES = {
-    "docker_image": f"neo4j:{neo4j_version}",
-    "host": "localhost",
-    "port": 7687,
-    "container_name": "neo4j-apoc",
-    "stop_container": True,
-    "import_volume": "$HOME/neo4j/data",
-    "data_volume": "$HOME/neo4j/data",
-    "regions_location": "$HOME/neo4j/data/regions.json",
-    "landmarks_location": "$HOME/neo4j/data/landmarks.json",
-    "map_sectors_location": "$HOME/neo4j/data/map_sectors.json",
-    "regions_filename": "regions.json",
-    "landmarks_filename": "landmarks.json",
-    "map_sectors_filename": "map_sectors.json",
-    "base_dir": "landmarks_dirs"
-}
-max_param_len = max(
-    [len(str(x)) for x in DEFAULT_VALUES.values()]
-)
-
-
-HELP_MESSAGE = f"""
-#Author: Vodohleb04
-Скрипт необходим для автоматического заполнения базы. 
-    Требует права root (запуск через sudo или от имени root)! 
-    Обязательным является наличие докера на устройстве!
-    Рекомендуется запускать скрипт в папке, содержащей venv для python. 
-    Запуск скрипта должен осуществляться из папки, в которой установлен модуль neo4j для python3 (версия не младше {neo4j_version})! 
-    Для установки модуля neo4j для python3 используйте команду pip install neo4j=={neo4j_version}
-    При вызове по умолчанию подразумевается, что .json файлы, необходимые для запуска
-    находятся в папке volume, соотвутсвующий /import, по умолчанию ({DEFAULT_VALUES['import_volume']}), что docker container с запущен либо не запущен, но host, 
-    port и container_name (указанные либо по умолчанию) не заняты. 
-    
-Для вызова испльзуйте шаблон
-
-sudo python3 import_kb.py user=user password=password 
-    [docker_image={str(DEFAULT_VALUES['docker_image'])}] [host={str(DEFAULT_VALUES['host'])}] [port={str(DEFAULT_VALUES['port'])}] [container_name={str(DEFAULT_VALUES['container_name'])}] [stop_container={str(DEFAULT_VALUES['stop_container'])}]
-    [import_volume={str(DEFAULT_VALUES['import_volume'])}] [data_volume={str(DEFAULT_VALUES['data_volume'])}]
-    [regions_location={str(DEFAULT_VALUES['regions_location'])}] 
-    [landmarks_location={str(DEFAULT_VALUES['landmarks_location'])}]
-    [map_sectors_location={str(DEFAULT_VALUES['map_sectors_location'])}]
-    [regions_filename={str(DEFAULT_VALUES['regions_filename'])}] [landmarks_filename={str(DEFAULT_VALUES['landmarks_filename'])}] [map_sectors_filename={str(DEFAULT_VALUES['map_sectors_filename'])}]
-    [base_dir={str(DEFAULT_VALUES['base_dir'])}]
-    [--help] [--h] [-h]
-Порядок аргументов не важен; аргументы в квадратных скобках не обязательны; если аргументы в скобках указываются в 
-    вызове, то скобки писать не нужно
-
-Доступный набор аргументов:
-    Аргумент                    {'Значение по умолчанию':{max_param_len}}\tПояснение
-    
-    user                        {'Отсутствует':{max_param_len}}\tИмя пользователя для доступа к базе. Обязательный аргумент
-    password                    {'Отсутствует':{max_param_len}}\tПароль для доступа к базе. Обязательный аргумент
-    docker_image                {str(DEFAULT_VALUES['docker_image']):{max_param_len}}\tОбраз neo4j (с указанием версии), который будет использован для не удастся 
-                                {'':{max_param_len}}\t\tподключиться к контейнеру либо не удастся запустить уже существующий контейнер
-    host                        {str(DEFAULT_VALUES['host']):{max_param_len}}\tХост сервера базы
-    port                        {str(DEFAULT_VALUES['port']):{max_param_len}}\tПорт сервера базы
-    container_name              {str(DEFAULT_VALUES['container_name']):{max_param_len}}\tИмя контейнера, который будет запущен, если к базе не удастся подключиться.
-                                {'':{max_param_len}}\t\tЕсли контейнер с таким именем не будет найден при попытке подключиться,
-                                {'':{max_param_len}}\t\tто он будет создан
-    stop_container              {str(DEFAULT_VALUES['stop_container']):{max_param_len}}\tФлаг остановки контейнера после завершения скрипта. При значении True контейнер 
-                                {'':{max_param_len}}\t\tбудет остановлен после завершения выполнения скрипта. Значение False 
-                                {'':{max_param_len}}\t\tрекомендуется устанавливать в случае, если после завершения скрипта 
-                                {'':{max_param_len}}\t\tdocker container должен продолжать свою раюоту (т.е. если база должна быть 
-                                {'':{max_param_len}}\t\tзапущена). Доступны значения True и False (case insensitive параметр)
-    import_volume               {str(DEFAULT_VALUES['import_volume']):{max_param_len}}\tVolume для docker контейнера, соответствующий папке /import котнейнера
-    data volume                 {str(DEFAULT_VALUES['data_volume']):{max_param_len}}\tVolume для docker контейнера, соответствующий папке /data котнейнера
-    regions_location            {str(DEFAULT_VALUES['regions_location']):{max_param_len}}\tПуть к .json файлу, содержащему регионы. Если volume по умолчанию
-                                {'':{max_param_len}}\t\tбыл изменен, то параметр является обязательным
-    landmarks_location          {str(DEFAULT_VALUES['landmarks_location']):{max_param_len}}\tПуть к .json файлу, содержащему достопримечательности с указанием городов, в которых
-                                {'':{max_param_len}}\t\tони расположены. Если volume по умолчанию был изменен, 
-                                {'':{max_param_len}}\t\tто параметр является обязательным
-    map_sectors_location        {str(DEFAULT_VALUES['map_sectors_location']):{max_param_len}}\tПуть к .json файлу, содержащему секторы карты. Если volume по умолчанию
-                                {'':{max_param_len}}\t\tбыл изменен, то параметр является обязательным      
-    regions_filename            {str(DEFAULT_VALUES['regions_filename']):{max_param_len}}\tИмя файла, из которого будет происходить импорт регионов. Под этим названием будет
-                                {'':{max_param_len}}\t\tперемещен файл в volume
-    landmarks_filename          {str(DEFAULT_VALUES['landmarks_filename']):{max_param_len}}\tИмя файла, из которого будет происходить импорт достопримечательностей и городов,
-                                {'':{max_param_len}}\t\tв которых они расположены. Под этим названием будет перемещен файл в volume              
-    map_sectors_filename        {str(DEFAULT_VALUES['map_sectors_filename']):{max_param_len}}\tИмя файла, из которого будет происходить импорт секторов карты. Под этим названием 
-                                {'':{max_param_len}}\t\tбудет перемещен файл в volume
-    base_dir                    {str(DEFAULT_VALUES['base_dir']):{max_param_len}}\tИмя базовой директории, в которой храняться директории достопримечательностей
-    --help                      {'Отсутствует':{max_param_len}}\tВывод этого сообщения
-    --h                         {'Отсутствует':{max_param_len}}\tВывод этого сообщения
-    -h                          {'Отсутствует':{max_param_len}}\tВывод этого сообщения
-
-В случае возникновения ошибки вся база очищается (происходит только в случае, если к базе удалось подключиться). Некоторые ошибки, например, возникающие из-за 
-    ограничений уникальности свойств узлов, не возникают при повторной попытке заупска скрипта (т.к. база попросту создаётся с чистого листа). 
-"""
-
-
-try:
-    from neo4j import GraphDatabase, Driver, exceptions
-except ImportError as e:
-    c = ""
-    while c != 'y' and c != 'n':
-        DEPENDENCIES_ARE_FINE = False
-        print("No module neo4j found. Install it? (Y/N)")
-        c = input().lower().strip()
-        if c == 'y':
-            os.system(f"pip install neo4j=={neo4j_version}")
-            print("Run script again.")
-        elif c == 'n':
-            print("Script is not available without neo4j package.")
-            print(HELP_MESSAGE)
-try:
-    import docker
-
-    client = docker.from_env()
-except ImportError as e:
-    DEPENDENCIES_ARE_FINE = False
-    c = ""
-    while c != 'y' and c != 'n':
-        print("No module docker found. Install it? (Y/N)")
-        c = input().lower().strip()
-        if c == 'y':
-            os.system(f"pip install docker")
-            print("Run script again.")
-        elif c == 'n':
-            print("Script is not available without neo4j package.")
-            print(HELP_MESSAGE)
 
 
 CONSTRAINTS_QUERIES = [
@@ -239,7 +118,7 @@ def create_indexes(driver):
             session.run(query)
 
 
-def import_regions(driver, filename="regions.json"):
+def import_regions(driver, filename):
     filename = f"file:///{filename}"
     with driver.session() as session:
         session.run(
@@ -329,7 +208,7 @@ def check_connection(driver):
         )
 
 
-def import_landmarks(driver, filename="landmarks.json"):
+def import_landmarks(driver, filename):
     filename = f"file:///{filename}"
     with driver.session() as session:
         session.run(
@@ -500,7 +379,7 @@ def import_landmarks(driver, filename="landmarks.json"):
         )
 
 
-def import_map_sectors(driver, filename="map_sectors.json"):
+def import_map_sectors(driver, filename):
     filename = f"file:///{filename}"
     with driver.session() as session:
         session.run(
@@ -750,65 +629,6 @@ def encoding_regions_and_landmarks(driver, base_dir):
             step_on_record(record)
 
 
-def copy_nessecary_files(
-        import_volume,
-        regions_location, landmarks_location, map_sectors_location,
-        regions_filename, landmarks_filename, map_sectors_filename
-):
-    def path_check():
-        nonlocal import_volume
-        nonlocal regions_location, landmarks_location, map_sectors_location
-        nonlocal regions_filename, landmarks_filename, map_sectors_filename
-        if not os.path.isdir(f"{import_volume}"):
-            raise AttributeError(
-                f"Expected import_volume argument to be path to directory. Got {import_volume} instead. Check if this dir exists"
-                f"Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-        if not (os.path.isfile(regions_location) and regions_location.endswith(".json")):
-            raise AttributeError(
-                f"Expected regions_location argument to be path to .json file. Got {regions_location} instead. Check if this file exists."
-                f" Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-        if not (os.path.isfile(landmarks_location) and landmarks_location.endswith(".json")):
-            raise AttributeError(
-                f"Expected landmarks_location argument to be path to .json file. Got {landmarks_location} instead.Check if this file exists."
-                f" Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-        if not (os.path.isfile(map_sectors_location) and map_sectors_location.endswith(".json")):
-            raise AttributeError(
-                f"Expected map_sectors_location argument to be path to .json file. Got {map_sectors_location} instead. Check if this file exists"
-                f" Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-        if not regions_filename.endswith(".json"):
-            raise AttributeError(
-                f"Expected regions_filename argument to be .json file. Got {regions_filename} instead."
-                f" Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-        if not landmarks_filename.endswith(".json"):
-            raise AttributeError(
-                f"Expected regions_filename argument to be .json file. Got {landmarks_filename} instead."
-                f" Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-        if not map_sectors_filename.endswith(".json"):
-            raise AttributeError(
-                f"Expected regions_filename argument to be .json file. Got {map_sectors_filename} instead."
-                f" Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-            )
-
-    path_check()
-    print(f"Moving file {regions_location} as {regions_filename} to import volume located at {import_volume}")
-    os.system(f"sudo cp {regions_location} {os.path.join(import_volume, regions_filename)}")
-    print(f"{regions_location} successfully moved to {import_volume}")
-
-    print(f"Moving file {landmarks_location} as {landmarks_filename} to import volume located at {import_volume}")
-    os.system(f"sudo cp {landmarks_location} {os.path.join(import_volume, landmarks_filename)}")
-    print(f"{landmarks_location} successfully moved to {import_volume}")
-
-    print(f"Moving file {map_sectors_location} as {map_sectors_filename} to import volume located at {import_volume}")
-    os.system(f"sudo cp {map_sectors_location} {os.path.join(import_volume, map_sectors_filename)}")
-    print(f"{map_sectors_location} successfully moved to {import_volume}")
-
-
 def run_cypher_scripts(
     driver,
     regions_filename, landmarks_filename, map_sectors_filename,
@@ -859,159 +679,38 @@ def run_cypher_scripts(
         driver.execute_query("MATCH (n) DETACH DELETE n;")
 
 
-def on_refused_connection(
-    user, password,
-    docker_image, host, port, container_name, stop_container, import_volume, data_volume,
-    regions_location, landmarks_location, map_sectors_location,
-    regions_filename, landmarks_filename, map_sectors_filename,
-    base_dir,
-    start_time
-):
-    print(f"Trying to remove container with name {container_name}...")
-    try:
-        client.containers.get("neo4j-apoc").remove(force=True)
-        print(f"Container with name {container_name} container name successfully removed")
-    except docker.errors.NotFound as e:
-        print(f"No such container: {container_name}")
-
-    print(f"Trying to run container with name {container_name} from image {docker_image}...")
-    print(f"Container settings:\n"
-          f"\timage: {docker_image}\n"
-          f"\thost: {host}\n"
-          f"\tport: {port}\n"
-          f"\t/data volume: {data_volume}\n"
-          f"\t/import volume: {import_volume}\n"
-          f"\tcontainer name: {container_name}")
-
-    container = client.containers.run(
-        "neo4j:5.18.0",
-        detach=True,
-        ports={"7474/tcp": "7474", "7687/tcp": (host, port)},
-        volumes=[f"{data_volume}:/data", f"{import_volume}:/import"],
-        name=container_name,
-        environment=[
-            'NEO4J_AUTH=neo4j/ostisGovno',
-            'NEO4J_apoc_export_file_enabled=true',
-            'NEO4J_apoc_import_file_enabled=true',
-            'NEO4J_apoc_import_file_useneo4jconfig=true',
-            'NEO4J_PLUGINS=[\"apoc\"]'
-        ]
-    )
-    for log_line in container.logs(stream=True):
-        print(log_line.decode("utf-8"))
-        if log_line.decode("utf-8").strip().lower().endswith("started."):
-            break
-    import_actions(
-        user, password,
-        host, port, container_name, stop_container, import_volume,
-        regions_location, landmarks_location, map_sectors_location,
-        regions_filename, landmarks_filename, map_sectors_filename,
-        base_dir,
-        start_time
-    )
-
-
-def import_actions(
-    user, password,
-    host, port, container_name, stop_container, import_volume,
-    regions_location, landmarks_location, map_sectors_location,
-    regions_filename, landmarks_filename, map_sectors_filename,
-    base_dir,
-    start_time
-):
-    try:
-        with GraphDatabase.driver(f'bolt://{host}:{port}', auth=(user, password)) as driver:
-            check_connection(driver)
-            print("Knowledge base is successfully connected")
-
-            copy_nessecary_files(
-                import_volume,
-                regions_location, landmarks_location, map_sectors_location,
-                regions_filename, landmarks_filename, map_sectors_filename
-            )
-            run_cypher_scripts(driver, regions_filename, landmarks_filename, map_sectors_filename, base_dir, start_time)
-            if stop_container:
-                os.system(f"sudo docker stop {container_name}")
-                print(f"Docker container {container_name} has been stopped.")
-            else:
-                print(f"Docker container {container_name} is still running.")
-    except Exception as e:
-        os.system(f"sudo docker stop {container_name}")
-        raise e
-
-
 def import_function(
-        user, password,
-        docker_image=DEFAULT_VALUES['docker_image'], host=DEFAULT_VALUES['host'], port=DEFAULT_VALUES['port'],
-        container_name=DEFAULT_VALUES['container_name'], stop_container=DEFAULT_VALUES['stop_container'],
-        import_volume=DEFAULT_VALUES['import_volume'], data_volume=DEFAULT_VALUES['data_volume'],
-        regions_location=DEFAULT_VALUES['regions_location'], landmarks_location=DEFAULT_VALUES['landmarks_location'],
-        map_sectors_location=DEFAULT_VALUES['map_sectors_location'],
-        regions_filename=DEFAULT_VALUES['regions_filename'], landmarks_filename=DEFAULT_VALUES['landmarks_filename'],
-        map_sectors_filename=DEFAULT_VALUES['map_sectors_filename'],
-        base_dir=DEFAULT_VALUES['base_dir']
+        user, password, host, port,
+        regions_filename, landmarks_filename, map_sectors_filename,
+        base_dir
 ):
-    data_volume = data_volume.replace("$HOME", str(pathlib.Path.home()))
-    import_volume = import_volume.replace("$HOME", str(pathlib.Path.home()))
-    regions_location = regions_location.replace("$HOME", str(pathlib.Path.home()))
-    landmarks_location = landmarks_location.replace("$HOME", str(pathlib.Path.home()))
-    map_sectors_location = map_sectors_location.replace("$HOME", str(pathlib.Path.home()))
     start = datetime.datetime.now()
     print("Trying to connect to the knowledge base...")
-    try:
-        import_actions(
-            user, password,
-            host, port, container_name, stop_container, import_volume,
-            regions_location, landmarks_location, map_sectors_location,
-            regions_filename, landmarks_filename, map_sectors_filename,
-            base_dir,
-            start
-        )
-    except (exceptions.ServiceUnavailable, ConnectionRefusedError) as e:
-        print("Connection refused! Actions are being taken...")
-        on_refused_connection(
-            user, password,
-            docker_image, host, port, container_name, stop_container, import_volume, data_volume,
-            regions_location, landmarks_location, map_sectors_location,
-            regions_filename, landmarks_filename, map_sectors_filename,
-            base_dir,
-            start
-        )
+    with GraphDatabase.driver(f'bolt://{host}:{port}', auth=(user, password)) as driver:
+        check_connection(driver)
+        print("Knowledge base is successfully connected")
 
+        run_cypher_scripts(driver, regions_filename, landmarks_filename, map_sectors_filename, base_dir, start)
 
 
 def main():
-    if "--help" in sys.argv or "--h" in sys.argv or "-h" in sys.argv:
-        print(HELP_MESSAGE)
-        return
     args = {}
     for arg in sys.argv[1:]:
         arg_pair = arg.split("=")
         if len(arg_pair) != 2:
             raise AttributeError(
-                f"Invalid argument \"{arg}\". Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
+                f"Invalid argument \"{arg}\"."
             )
         if arg_pair[0].strip() not in AVAILABLE_ARGS:
             raise AttributeError(
                 f"Invalid argument: \"{arg_pair[0]}\". Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
             )
-        if arg_pair[0] == "stop_container":
-            if arg_pair[1].lower().strip() == "true":
-                args[arg_pair[0].strip()] = True
-            elif arg_pair[1].lower().strip() == "false":
-                args[arg_pair[0].strip()] = False
-            else:
-                raise AttributeError(
-                    f"Invalid argument: \"{arg_pair[0]}\". Call \"python3 import_kb.py --help\" or python3 import_kb.py -h for more information"
-                )
         else:
             args[arg_pair[0].strip()] = arg_pair[1].strip()
-    if "user" not in args.keys():
+    if len(AVAILABLE_ARGS) != len(args.keys()):
         raise AttributeError("Attribute \"user\" is required.")
-    if "password" not in args.keys():
-        raise AttributeError("Attribute \"password\" is required.")
     import_function(**args)
 
 
-if __name__ == "__main__" and DEPENDENCIES_ARE_FINE:
+if __name__ == "__main__":
     main()
