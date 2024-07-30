@@ -16,13 +16,13 @@ RUN apt-get update &&\
 RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     python3 -m venv .venv &&\
-    . ./.venv/bin/activate &&\
+    . .venv/bin/activate &&\
     pip install -r requirements.txt &&\
-    pip list &&\
     mv ./landmarks.json /import &&\
     mv ./map_sectors.json /import &&\
-    mv ./regions.json /import &&\
-    mv ./import_kb.py ../
+    mv ./regions.json /import
+
+WORKDIR DB
 
 # Neo4j settings
 ENV NEO4J_AUTH=neo4j/ostisGovno \
