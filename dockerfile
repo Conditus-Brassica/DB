@@ -5,9 +5,9 @@ WORKDIR service
 # install python (common)
 RUN apt-get install bash &&\ 
     chsh -s /bin/bash     
-    
+
 RUN apt-get update &&\
-    apt-get apt-get install python3.11 &&\
+    apt-get install python3.11 &&\
     apt-get clean
 
 # clone data
