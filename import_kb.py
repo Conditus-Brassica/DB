@@ -515,13 +515,10 @@ def encoding_regions_and_landmarks(driver, base_dir):
         nonlocal session
         session.run(
             """
-            CALL db.index.fulltext.queryNodes('landmark_name_fulltext_index', $landmark_name)
-                YIELD 
-                    score,
-                    node AS landmark
-                        WHERE 
-                            landmark.latitude = toFloat($landmark_latitude) AND
-                            landmark.longitude = toFloat($landmark_longitude)
+            MATCH (landmark)
+                WHERE landmark.name STARTS WITH $landmark_name 
+                    AND landmark.latitude = toFloat($landmark_latitude)
+                    AND landmark.longitude = toFloat($landmark_longitude)
             SET landmark.id_code = $id_code, landmark.path = $path
             """,
             landmark_name=landmark_name,
