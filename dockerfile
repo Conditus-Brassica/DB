@@ -8,6 +8,7 @@ RUN apt-get install bash &&\
 
 RUN apt-get update &&\
     apt-get install python3 -y &&\
+    apt-get install python3-venv -y &&\
     apt-get install git -y &&\
     apt-get clean
 
