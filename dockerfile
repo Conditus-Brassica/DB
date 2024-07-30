@@ -7,7 +7,7 @@ RUN apt-get install bash &&\
     chsh -s /bin/bash
 
 RUN apt-get update &&\
-    apt-get install python3 &&\
+    apt-get install python3 -y &&\
     apt-get clean
 
 # clone data
