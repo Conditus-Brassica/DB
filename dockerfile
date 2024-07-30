@@ -18,6 +18,7 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     python3 -m venv .venv &&\
     . ./.venv/bin/activate &&\
     pip install -r requirements.txt &&\
+    pip list &&\
     mv ./landmarks.json /import &&\
     mv ./map_sectors.json /import &&\
     mv ./regions.json /import &&\
