@@ -36,4 +36,5 @@ VOLUME $HOME/neo4j/data:/data
 EXPOSE 7474
 EXPOSE 7687
 
-RUN python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7678 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs
+RUN . .venv/bin/activate &&\
+    python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7678 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs
