@@ -22,7 +22,7 @@ ENV NEO4J_AUTH=neo4j/ostisGovno \
     NEO4J_apoc_export_file_enabled=true \
     NEO4J_apoc_import_file_enabled=true \
     NEO4J_apoc_import_file_useneo4jconfig=true \
-    NEO4J_PLUGINS=\[\"apoc\\"\] 
+    NEO4J_PLUGINS=["apoc"] 
 
 VOLUME $HOME/neo4j/data:/data
 
