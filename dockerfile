@@ -4,10 +4,11 @@ WORKDIR service
 
 # install python (common)
 RUN apt-get install bash &&\ 
-    chsh -s /bin/bash     
+    chsh -s /bin/bash 
+    sudo apt install software-properties-commonv
+    sudo add-apt-repository ppa:deadsnakes/ppa
 
-RUN sudo add-apt-repository universe &&\
-    apt-get update &&\
+RUN apt-get update &&\
     apt-get install python3.11 &&\
     apt-get clean
 
