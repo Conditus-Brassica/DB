@@ -31,6 +31,10 @@ RUN apt-get install wget -y &&\
 # wget -O - https://debian.neo4j.com/neotechnology.gpg.key | gpg --dearmor -o /etc/apt/keyrings/neotechnology.gpg &&\
 EXPOSE 7474 7687
 
-ENTRYPOINT . .venv/bin/activate &&\
+WORKDIR DB
+
+ENTRYPOINT echo $(pwd) &&\
+    echo $(ll) &&\
+    . .venv/bin/activate &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir= landmarks_dirs &&\
     echo "Done"
