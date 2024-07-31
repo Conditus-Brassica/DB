@@ -17,7 +17,10 @@ RUN apt-get install wget gnupg -y &&\
     . .venv/bin/activate &&\
     pip install -r requirements.txt &&\
     echo $(ls -al) &&\
-    sh neo4j_installation_script.sh &&\
+    wget -O - https://debian.neo4j.com/neotechnology.gpg.key | gpg --dearmor -o /etc/apt/keyrings/neotechnology.gpg &&\
+    echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list &&\
+    apt-get update &&\
+    apt-get install neo4j=1:5.18.0 -y &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
