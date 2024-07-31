@@ -15,6 +15,7 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
     pip install -r requirements.txt &&\
+    echo $(ls -al) &&\
     ./neo4j_installation_script.sh &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
