@@ -13,7 +13,6 @@ RUN apt-get install wget -y &&\
     apt-get install gnupg -y &&\
     git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
-    chmod 777 neo4j_installation_script.sh &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
     pip install -r requirements.txt &&\
@@ -34,6 +33,6 @@ EXPOSE 7474 7687
 WORKDIR DB
 
 ENTRYPOINT . .venv/bin/activate &&\
-    systemctl status neo4j &&\
+    systemctl status neo4j.service &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     echo "Done"
