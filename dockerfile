@@ -9,7 +9,8 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
+RUN apt-get wget &&\
+    git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     chmod 777 neo4j_installation_script.sh &&\
     python3 -m venv .venv &&\
