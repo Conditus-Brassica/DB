@@ -11,6 +11,7 @@ RUN apt-get update &&\
 
 RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
+    chmod 777 neo4j_installation_script.sh &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
     pip install -r requirements.txt &&\
