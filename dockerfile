@@ -9,7 +9,7 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-RUN apt-get install wget gnupg &&\
+RUN apt-get install wget gnupg -y &&\
     git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     chmod 777 neo4j_installation_script.sh &&\
