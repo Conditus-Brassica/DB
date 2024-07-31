@@ -32,7 +32,7 @@ EXPOSE 7474 7687
 
 WORKDIR DB
 
-ENTRYPOINT neo4j start &&\
+ENTRYPOINT neo4j start -u neo4j -p ostisGovno &&\
     . .venv/bin/activate &&\
     ps auxf &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
