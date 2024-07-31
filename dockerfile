@@ -19,7 +19,7 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     mv ./landmarks.json /import &&\
     mv ./map_sectors.json /import &&\
     mv ./regions.json /import &&\
-    apt-get install iproute2
+    apt-get install iproute2 -y
 
 WORKDIR DB
 
