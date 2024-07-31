@@ -1,0 +1,16 @@
+[Unit]
+Description=Neo4j Graph Database
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/share/neo4j/bin/neo4j console
+Restart=always
+User=neo4j
+Group=neo4j
+Environment="NEO4J_CONF=/etc/neo4j" "NEO4J_HOME=/var/lib/neo4j" "NEO4J_AUTH=neo4j/ostisGovno" "NEO4J_apoc_export_file_enabled=true" "NEO4J_apoc_import_file_enabled=true" "NEO4J_apoc_import_file_useneo4jconfig=true" "NEO4J_PLUGINS=["apoc"]"
+LimitNOFILE=60000
+TimeoutSec=120
+
+[Install]
+WantedBy=multi-user.target
