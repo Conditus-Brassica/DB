@@ -17,8 +17,7 @@ RUN apt-get install wget -y &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
     pip install -r requirements.txt &&\
-    echo $(ls -al) &&\
-    wget -O - https://debian.neo4j.com/neotechnology.gpg.key | gpg --dearmor -o /etc/apt/keyrings/neotechnology.gpg &&\
+    wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add - &&\
     echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list &&\
     apt-get update &&\
     apt-get install neo4j=1:5.18.0 -y &&\
@@ -29,7 +28,7 @@ RUN apt-get install wget -y &&\
     mv ./neo4j.service /lib/systemd/system/ &&\
     systemctl enable neo4j.service
 #    apt-get install iproute2 -y
-
+# wget -O - https://debian.neo4j.com/neotechnology.gpg.key | gpg --dearmor -o /etc/apt/keyrings/neotechnology.gpg &&\
 EXPOSE 7474 7687
 
 ENTRYPOINT . .venv/bin/activate &&\
