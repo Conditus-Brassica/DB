@@ -9,6 +9,12 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
+ENV NEO4J_AUTH=neo4j/ostisGovno \
+    NEO4J_apoc_export_file_enabled=true \
+    NEO4J_apoc_import_file_enabled=true \
+    NEO4J_apoc_import_file_useneo4jconfig=true \
+    NEO4J_PLUGINS=["apoc"] 
+
 RUN apt-get install wget -y &&\
     apt-get install gnupg -y &&\
     git clone https://github.com/Conditus-Brassica/DB.git &&\
@@ -23,7 +29,6 @@ RUN apt-get install wget -y &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
-    cat variables.txt >> /etc/profiles &&\
     mv ./apoc-5.18.0-extended.jar /var/lib/neo4j/plugins
 
 EXPOSE 7474 7687
