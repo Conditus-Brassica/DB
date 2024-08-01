@@ -23,17 +23,14 @@ RUN apt-get install wget -y &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
-    mv ./apoc-5.18.0-extended.jar /var/lib/neo4j/plugins &&\
-    mv ./neo4j.service /lib/systemd/system/ &&\
-    systemctl enable neo4j.service
-#    apt-get install iproute2 -y
-# wget -O - https://debian.neo4j.com/neotechnology.gpg.key | gpg --dearmor -o /etc/apt/keyrings/neotechnology.gpg &&\
+    mv ./apoc-5.18.0-extended.jar /var/lib/neo4j/plugins
+
 EXPOSE 7474 7687
 
 WORKDIR DB
 
-ENTRYPOINT neo4j start -u neo4j -p ostisGovno &&\
+ENTRYPOINT cat variables.txt >> /etc/profiles &&\
+    neo4j start  &&\
     . .venv/bin/activate &&\
-    ps auxf &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     echo "Done"
