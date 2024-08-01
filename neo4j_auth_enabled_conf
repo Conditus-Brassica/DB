@@ -26,7 +26,7 @@ server.directories.import=/var/lib/neo4j/import
 
 # Whether requests to Neo4j are authenticated.
 # To disable authentication, uncomment this line
-dbms.security.auth_enabled=true
+# dbms.security.auth_enabled=true
 
 # Anonymous usage data reporting
 # To disable, uncomment this line
