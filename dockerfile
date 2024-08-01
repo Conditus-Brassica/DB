@@ -35,8 +35,6 @@ EXPOSE 7474 7687
 
 WORKDIR DB
 
-CMD tail -f /dev/null
-
 # ENTRYPOINT mv neo4j_auth_disabled_conf /etc/neo4j/neo4j.conf &&\
 #     neo4j start &&\
 #     cypher-shell -f add_user.cypher &&\
@@ -45,5 +43,6 @@ CMD tail -f /dev/null
 ENTRYPOINT neo4j-admin dbms set-initial-password  ostisGovno &&\
     neo4j start &&\
     . .venv/bin/activate
+    tail -f /dev/null
     # python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     # echo "Done"
