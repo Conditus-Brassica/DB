@@ -36,7 +36,7 @@ EXPOSE 7474 7687
 WORKDIR DB
 
 ENTRYPOINT mv neo4j_auth_disabled_conf /etc/neo4j/neo4j.conf &&\
-    neo4j start  &&\
+    neo4j start &&\
     cypher-shell -d system &&\
     ALTER USER neo4j SET PASSWORD 'ostisGovno' :exit; &&\
     neo4j stop &&\
