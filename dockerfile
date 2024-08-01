@@ -35,6 +35,8 @@ EXPOSE 7474 7687
 
 WORKDIR DB
 
+CMD tail -f /dev/null
+
 # ENTRYPOINT mv neo4j_auth_disabled_conf /etc/neo4j/neo4j.conf &&\
 #     neo4j start &&\
 #     cypher-shell -f add_user.cypher &&\
