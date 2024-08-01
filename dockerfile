@@ -42,7 +42,7 @@ WORKDIR DB
 #     mv neo4j_auth_enabled_conf /etc/neo4j/neo4j.conf &&\
 ENTRYPOINT neo4j-admin dbms set-initial-password  ostisGovno &&\
     neo4j start &&\
-    . .venv/bin/activate
+    . .venv/bin/activate &&\
     tail -f /dev/null
     # python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     # echo "Done"
