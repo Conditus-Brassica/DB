@@ -23,14 +23,14 @@ RUN apt-get install wget -y &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
+    cat variables.txt >> /etc/profiles &&\
     mv ./apoc-5.18.0-extended.jar /var/lib/neo4j/plugins
 
 EXPOSE 7474 7687
 
 WORKDIR DB
 
-ENTRYPOINT cat variables.txt >> /etc/profiles &&\
-    neo4j start  &&\
+ENTRYPOINT neo4j start  &&\
     . .venv/bin/activate &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     echo "Done"
