@@ -635,44 +635,44 @@ def run_cypher_scripts(
     try:
         last_operation = datetime.datetime.now()
 
-        print("Creating constraints...")
+        print("Creating constraints...", flush=true)
         create_constraints(driver)
-        print(f"Constraints are created in {datetime.datetime.now() - last_operation}")
+        print(f"Constraints are created in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
 
-        print("Creating indexes...")
+        print("Creating indexes...", flush=true)
         create_indexes(driver)
-        print(f"Indexes created in {datetime.datetime.now() - last_operation}")
+        print(f"Indexes created in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
 
-        print(f"Importing regions from \"file:///{regions_filename}\"...")
+        print(f"Importing regions from \"file:///{regions_filename}\"...", flush=true)
         import_regions(driver, regions_filename)
-        print(f"Regions have been imported in {datetime.datetime.now() - last_operation}")
+        print(f"Regions have been imported in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
 
-        print(f"Importing map sectors from \"file:///{map_sectors_filename}\"...")
+        print(f"Importing map sectors from \"file:///{map_sectors_filename}\"...", flush=true)
         import_map_sectors(driver, map_sectors_filename)
-        print(f"Map sectors have been imported in {datetime.datetime.now() - last_operation}")
+        print(f"Map sectors have been imported in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
 
-        print(f"Importing landmarks from \"file:///{landmarks_filename}\"...")
+        print(f"Importing landmarks from \"file:///{landmarks_filename}\"...", flush=true)
         import_landmarks(driver, landmarks_filename)
-        print(f"Landmarks have been imported in {datetime.datetime.now() - last_operation}")
+        print(f"Landmarks have been imported in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
-        print("Connecting map sectors with landmarks...")
+        print("Connecting map sectors with landmarks...", flush=true)
         connect_landmarks_with_map_sectors(driver)
-        print(f"Landmarks have been connected with map sectors in {datetime.datetime.now() - last_operation}")
+        print(f"Landmarks have been connected with map sectors in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
 
         print("Encoding regions and landmarks...")
         encoding_regions_and_landmarks(driver, base_dir)
-        print(f"Landmarks and regions have been encoded in {datetime.datetime.now() - last_operation}")
+        print(f"Landmarks and regions have been encoded in {datetime.datetime.now() - last_operation}", flush=true)
 
-        print(f"Knowledge bas has been imported. Complete in {datetime.datetime.now() - start_time}")
+        print(f"Knowledge bas has been imported. Complete in {datetime.datetime.now() - start_time}", flush=true)
 
     except Exception as e:
-        print("ERROR OCCURED!")
-        print(f"{e.args[0]}, Error type: {type(e)}")
+        print("ERROR OCCURED!", flush=true)
+        print(f"{e.args[0]}, Error type: {type(e)}", flush=true)
         driver.execute_query("MATCH (n) DETACH DELETE n;")
 
 
@@ -682,10 +682,10 @@ def import_function(
         base_dir
 ):
     start = datetime.datetime.now()
-    print("Trying to connect to the knowledge base...")
+    print("Trying to connect to the knowledge base...", flush=true)
     with GraphDatabase.driver(f'bolt://{host}:{port}', auth=(user, password)) as driver:
         check_connection(driver)
-        print("Knowledge base is successfully connected")
+        print("Knowledge base is successfully connected", flush=true)
 
         run_cypher_scripts(driver, regions_filename, landmarks_filename, map_sectors_filename, base_dir, start)
 
