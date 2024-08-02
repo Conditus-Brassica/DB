@@ -37,8 +37,7 @@ EXPOSE 7474 7687
 WORKDIR DB
 
 ENTRYPOINT neo4j-admin dbms set-initial-password  ostisGovno &&\
-    . .venv/bin/activate &&\
-    sh -c neo4j start &&\
+    neo4j start &&\. .venv/bin/activate &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     tail -f /dev/null &&\
     echo "Done"
