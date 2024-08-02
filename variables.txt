@@ -1,7 +1,0 @@
-export NEO4J_CONF=/etc/neo4j
-export NEO4J_HOME=/var/lib/neo4j
-export NEO4J_AUTH=neo4j/ostisGovno
-export NEO4J_apoc_export_file_enabled=true
-export NEO4J_apoc_import_file_enabled=true
-export NEO4J_apoc_import_file_useneo4jconfig=true
-export NEO4J_PLUGINS=["apoc"]

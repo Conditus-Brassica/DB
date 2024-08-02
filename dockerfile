@@ -30,6 +30,7 @@ RUN apt-get install wget -y &&\
     mv neo4j.conf /etc/neo4j/neo4j.conf &&\
     mv apoc.conf /etc/neo4j/apoc.conf &&\
     mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
+    apt-get purge wget gnupg git -y &&\ 
     apt-get clean
 
 EXPOSE 7474 7687
@@ -42,4 +43,7 @@ CMD neo4j-admin dbms set-initial-password  ostisGovno &&\
     echo "Importing DB ..." &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     echo "Done" &&\
+    pip uninstall neo4j &&\
+    apt-get purge python3 -y &&\
+    apt-get purge python3-venv -y &&\
     tail -f /dev/null
