@@ -635,7 +635,7 @@ def run_cypher_scripts(
     try:
         last_operation = datetime.datetime.now()
 
-        print("Creating constraints...", flush=true)
+        print("Creating constraints...", flush=True)
         create_constraints(driver)
         print(f"Constraints are created in {datetime.datetime.now() - last_operation}", flush=true)
         last_operation = datetime.datetime.now()
