@@ -13,5 +13,4 @@ docker run -p 7474:7474 -p 7687:7687 db_img
 ```
 
 Посмотреть базу можно через браузер по адресу localhost:7474
-
-![Vileyskiye cowboys](https://i.scdn.co/image/ab67616d0000b2730ce52f4ba340a1e459e6a978)
+<img src="https://i.scdn.co/image/ab67616d0000b2730ce52f4ba340a1e459e6a978" Title="Vileyskiye cowboys">
