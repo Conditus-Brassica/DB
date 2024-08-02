@@ -28,19 +28,16 @@ RUN apt-get install wget -y &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
     mv neo4j.conf /etc/neo4j/neo4j.conf &&\
-    mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins
+    mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
+    apt-get clean
 
 EXPOSE 7474 7687
 
 WORKDIR DB
 
-# ENTRYPOINT mv neo4j_auth_disabled_conf /etc/neo4j/neo4j.conf &&\
-#     neo4j start &&\
-#     cypher-shell -f add_user.cypher &&\
-#     neo4j stop &&\
-#     mv neo4j_auth_enabled_conf /etc/neo4j/neo4j.conf &&\
 ENTRYPOINT neo4j-admin dbms set-initial-password  ostisGovno &&\
-    neo4j start &&\
     . .venv/bin/activate &&\
+    sh -c neo4j start &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
+    tail -f /dev/null &&\
     echo "Done"

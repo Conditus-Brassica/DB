@@ -705,7 +705,7 @@ def main():
         else:
             args[arg_pair[0].strip()] = arg_pair[1].strip()
     if len(AVAILABLE_ARGS) != len(args.keys()):
-        raise AttributeError("Attribute \"user\" is required.")
+        raise AttributeError("Not all required attributes are given.")
     import_function(**args)
 
 
