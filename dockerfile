@@ -42,4 +42,4 @@ CMD neo4j-admin dbms set-initial-password  ostisGovno &&\
     echo "Importing DB ..." &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     echo "Done" &&\
-    tail /dev/null
+    tail -f /dev/null
