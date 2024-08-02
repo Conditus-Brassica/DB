@@ -28,6 +28,7 @@ RUN apt-get install wget -y &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
     mv neo4j.conf /etc/neo4j/neo4j.conf &&\
+    mv apoc.conf /etc/neo4j/apoc.conf &&\
     mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
     apt-get clean
 
