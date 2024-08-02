@@ -36,7 +36,7 @@ EXPOSE 7474 7687
 
 WORKDIR DB
 
-ENTRYPOINT neo4j-admin dbms set-initial-password  ostisGovno &&\
+CMD neo4j-admin dbms set-initial-password  ostisGovno &&\
     neo4j start &&\
     . .venv/bin/activate &&\
     echo "Importing DB ..." &&\
