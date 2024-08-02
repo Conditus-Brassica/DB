@@ -9,11 +9,9 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-ENV NEO4J_AUTH=neo4j/ostisGovno \
-    NEO4J_apoc_export_file_enabled=true \
+ENV NEO4J_apoc_export_file_enabled=true \
     NEO4J_apoc_import_file_enabled=true \
-    NEO4J_apoc_import_file_useneo4jconfig=true \
-    NEO4J_PLUGINS=["apoc"] 
+    NEO4J_apoc_import_file_useneo4jconfig=true
 
 RUN apt-get install wget -y &&\
     apt-get install gnupg -y &&\
@@ -29,7 +27,8 @@ RUN apt-get install wget -y &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
-    mv ./apoc-5.18.0-extended.jar /var/lib/neo4j/plugins
+    mv neo4j.conf /etc/neo4j/neo4j.conf &&\
+    mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins
 
 EXPOSE 7474 7687
 
@@ -42,11 +41,6 @@ WORKDIR DB
 #     mv neo4j_auth_enabled_conf /etc/neo4j/neo4j.conf &&\
 ENTRYPOINT neo4j-admin dbms set-initial-password  ostisGovno &&\
     neo4j start &&\
-    chown neo4j:neo4j /var/lib/neo4j/plugins/apoc-5.18.0-extended.jar &&\
-    chmod 755 /var/lib/neo4j/plugins/apoc-5.18.0-extended.jar &&\
-    mv neo4j.conf /etc/neo4j/neo4j.conf &&\
-    neo4j restart &&\
     . .venv/bin/activate &&\
-    ls -l /var/lib/neo4j/labs &&\
     python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs &&\
     echo "Done"
