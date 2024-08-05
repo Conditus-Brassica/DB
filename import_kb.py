@@ -9,7 +9,7 @@ from neo4j import GraphDatabase, Driver, exceptions
 AVAILABLE_ARGS = [
     "user", "password", "host", "port",
     "regions_filename", "landmarks_filename", "map_sectors_filename",
-    "base_dir"
+    "base_dir", "save_existing_id_codes"
 ]
 
 
@@ -486,7 +486,7 @@ def connect_landmarks_with_map_sectors(driver):
         )
 
 
-def encoding_regions_and_landmarks(driver, base_dir):
+def encoding_regions_and_landmarks_change_id_code(driver, base_dir):
     country_counter = 0
     current_country_name = ""
     state_counter = 0
@@ -626,10 +626,265 @@ def encoding_regions_and_landmarks(driver, base_dir):
             step_on_record(record)
 
 
-def run_cypher_scripts(
+def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
+    def find_last_used_id_code_country():
+        nonlocal session
+        last_used_id_code_res = session.run(
+            """
+            MATCH (country: Country) RETURN max(country.id_code) AS last_used_id_code;
+            """
+        )
+        last_used_id_code = last_used_id_code_res.single().get("last_used_id_code")
+        if last_used_id_code is None:
+            return 0
+        else:
+            return last_used_id_code
+
+    def find_last_used_id_code_state(country_name: str):
+        nonlocal session
+        last_used_id_code_res = session.run(
+            """
+            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $country_name)
+                YIELD score, node AS country
+            WITH score, country
+                ORDER BY score DESC
+                LIMIT 1
+            OPTIONAL MATCH (country)-[:INCLUDE]->(state: State)
+            RETURN country.name AS country_name, max(state.id_code) AS last_used_id_code;
+            """,
+            country_name=country_name
+        )
+        last_used_id_code = last_used_id_code_res.single().get("last_used_id_code")
+        if last_used_id_code is None:
+            return 0
+        else:
+            return last_used_id_code
+
+    def find_last_used_id_code_district(state_name: str):
+        nonlocal session
+        last_used_id_code_res = session.run(
+            """
+            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $state_name)
+                YIELD score, node AS state
+            WITH score, state
+                ORDER BY score DESC
+                LIMIT 1
+            OPTIONAL MATCH (state)-[:INCLUDE]->(district: District)
+            RETURN state.name AS state_name, max(district.id_code) AS last_used_id_code;
+            """,
+            state_name=state_name
+        )
+        last_used_id_code = last_used_id_code_res.single().get("last_used_id_code")
+        if last_used_id_code is None:
+            return 0
+        else:
+            return last_used_id_code
+
+    def find_last_used_id_code_city(district_name: str):
+        nonlocal session
+        last_used_id_code_res = session.run(
+            """
+            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $district_name)
+                YIELD score, node AS district
+            WITH score, district
+                ORDER BY score DESC
+                LIMIT 1
+            OPTIONAL MATCH (district)-[:INCLUDE]->(city: City)
+            RETURN district.name AS district_name, max(city.id_code) AS last_used_id_code;
+            """,
+            district_name=district_name
+        )
+        last_used_id_code = last_used_id_code_res.single().get("last_used_id_code")
+        if last_used_id_code is None:
+            return 0
+        else:
+            return last_used_id_code
+
+    def find_last_used_id_code_landmark(region_name: str):
+        nonlocal session
+        last_used_id_code_res = session.run(
+            """
+            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $region_name)
+                YIELD score, node AS region
+            WITH score, region
+                ORDER BY score DESC
+                LIMIT 1
+            OPTIONAL MATCH (region)<-[:LOCATED]-(landmark: Landmark)
+            RETURN region.name AS region_name, max(landmark.id_code) AS last_used_id_code;
+            """,
+            region_name=region_name
+        )
+        last_used_id_code = last_used_id_code_res.single().get("last_used_id_code")
+        if last_used_id_code is None:
+            return 0
+        else:
+            return last_used_id_code
+
+    def write_region_id_code(region_name, id_code):
+        nonlocal session
+        session.run(
+            """
+            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $region_name)
+                YIELD score, node AS region
+            WITH score, region
+                ORDER BY score DESC
+                LIMIT 1
+            SET region.id_code = $id_code
+            """,
+            region_name=region_name, id_code=id_code
+        )
+
+    def write_landmark_id_code_and_path(landmark_name, landmark_latitude, landmark_longitude, id_code, path):
+        nonlocal session
+        session.run(
+            """
+            MATCH (landmark)
+                WHERE landmark.name STARTS WITH $landmark_name 
+                    AND landmark.latitude = toFloat($landmark_latitude)
+                    AND landmark.longitude = toFloat($landmark_longitude)
+            SET landmark.id_code = $id_code, landmark.path = $path
+            """,
+            landmark_name=landmark_name,
+            landmark_latitude=landmark_latitude,
+            landmark_longitude=landmark_longitude,
+            id_code=id_code,
+            path=path
+        )
+
+    def step_on_record(record):
+        # Name constraints are unique, so there is no need to update current_name_<region_type> and
+        # it's enough to update counter only for the next included region_type but not for every
+        nonlocal session, base_dir
+
+        country_id_code = record.get("country_id_code")
+        if country_id_code is None:
+            if record.get("country_name") is not None:
+                last_used_country_id_code = find_last_used_id_code_country()
+                write_region_id_code(record.get("country_name"), last_used_country_id_code + 1)
+                country_id_code = last_used_country_id_code + 1
+
+        state_id_code = record.get("state_id_code")
+        if state_id_code is None:
+            if record.get("state_name") is not None:
+                last_used_state_id_code = find_last_used_id_code_state(record.get("country_name"))
+                write_region_id_code(record.get("state_name"), last_used_state_id_code + 1)
+                state_id_code = last_used_state_id_code + 1
+            else:
+                state_id_code = 0
+
+        district_id_code = record.get("district_id_code")
+        if district_id_code is None:
+            if record.get("district_name") is not None:
+                last_used_district_id_code = find_last_used_id_code_district(record.get("state_name"))
+                write_region_id_code(record.get("district_name"), last_used_district_id_code + 1)
+                district_id_code = last_used_district_id_code + 1
+            else:
+                district_id_code = 0
+
+        city_id_code = record.get("city_id_code")
+        if city_id_code is None:
+            if record.get("city_name") is not None:
+                last_used_city_id_code = find_last_used_id_code_city(record.get("district_name"))
+                write_region_id_code(record.get("city_name"), last_used_city_id_code + 1)
+                city_id_code = last_used_city_id_code + 1
+            else:
+                city_id_code = 0
+
+        if record.get("landmark_id_code") is None:
+            if record.get("landmark_name") is not None:
+                if record.get("city_name") is None: 
+                    last_used_landmark_id_code = find_last_used_id_code_landmark(record.get("district_name"))
+                else:
+                    last_used_landmark_id_code = find_last_used_id_code_landmark(record.get("city_name"))
+                path = os.path.join(
+                    base_dir, f"{country_id_code}/"
+                              f"{state_id_code}/"
+                              f"{district_id_code}/"
+                              f"{city_id_code}/"
+                              f"{last_used_landmark_id_code + 1}"
+                )
+                write_landmark_id_code_and_path(
+                    record.get("landmark_name"), record.get("landmark_latitude"), record.get("landmark_longitude"),
+                    last_used_landmark_id_code + 1, path
+                )
+
+    with driver.session() as session:
+        landmarks_amount_res = session.run(
+            """
+            MATCH (landmark: Landmark) RETURN count(landmark) AS landmarks_amount;
+            """
+        )
+        landmarks_amount = landmarks_amount_res.single().get("landmarks_amount")
+        for i in range(landmarks_amount):
+            result = session.run(
+                """
+                MATCH (country: Country)
+                OPTIONAL MATCH (state: State)<-[:INCLUDE]-(country) 
+                OPTIONAL MATCH (district: District)<-[:INCLUDE]-(state)
+                OPTIONAL MATCH (city: City)<-[:INCLUDE]-(district)
+                CALL apoc.do.case(
+                    [
+                        city IS NOT null,
+                        "
+                            OPTIONAL MATCH (landmark: Landmark)-[:LOCATED]->(city)
+                            RETURN 
+                                landmark.name AS landmark_name,
+                                landmark.latitude AS landmark_latitude,
+                                landmark.longitude AS landmark_longitude,
+                                landmark.id_code AS landmark_id_code;
+                        ",
+                        district IS NOT null,
+                        "
+                            OPTIONAL MATCH (landmark: Landmark)-[:LOCATED]->(district)
+                            RETURN 
+                                landmark.name AS landmark_name,
+                                landmark.latitude AS landmark_latitude,
+                                landmark.longitude AS landmark_longitude,
+                                landmark.id_code AS landmark_id_code;
+                        "
+                    ],
+                    "
+                        RETURN 
+                            null as landmark_name,
+                            null as landmark_latitude,
+                            null as landmark_longitude,
+                            null as landmark_id_code;
+                    ",
+                    {city: city, district: district}
+                ) YIELD value
+                RETURN DISTINCT
+                    country.name AS country_name,
+                    country.id_code AS country_id_code,
+                    state.name AS state_name,
+                    state.id_code AS state_id_code,
+                    district.name AS district_name,
+                    district.id_code AS district_id_code,
+                    city.name AS city_name,
+                    city.id_code AS city_id_code,
+                    value.landmark_name AS landmark_name,
+                    value.landmark_latitude AS landmark_latitude,
+                    value.landmark_longitude AS landmark_longitude,
+                    value.landmark_id_code AS landmark_id_code
+                ORDER BY 
+                    country_name ASC,
+                    state_name ASC,
+                    district_name ASC,
+                    city_name ASC,
+                    landmark_name ASC
+                SKIP $offset
+                LIMIT 1
+                """,
+                offset=i
+            )
+            record = result.single()
+            step_on_record(record)
+
+
+def run_cypher_scripts(  # TODO define case of using reencoding and encoding
     driver,
     regions_filename, landmarks_filename, map_sectors_filename,
     base_dir,
+    save_existing_id_codes,
     start_time
 ):
     try:
@@ -665,7 +920,10 @@ def run_cypher_scripts(
         last_operation = datetime.datetime.now()
 
         print("Encoding regions and landmarks...")
-        encoding_regions_and_landmarks(driver, base_dir)
+        if save_existing_id_codes:
+            encoding_regions_and_landmarks_no_change_id_code(driver, base_dir)
+        else:
+            encoding_regions_and_landmarks_change_id_code(driver, base_dir)
         print(f"Landmarks and regions have been encoded in {datetime.datetime.now() - last_operation}", flush=True)
 
         print(f"Knowledge bas has been imported. Complete in {datetime.datetime.now() - start_time}", flush=True)
@@ -678,7 +936,7 @@ def run_cypher_scripts(
 def import_function(
         user, password, host, port,
         regions_filename, landmarks_filename, map_sectors_filename,
-        base_dir
+        base_dir, save_existing_id_codes
 ):
     start = datetime.datetime.now()
     print("Trying to connect to the knowledge base...", flush=True)
@@ -686,7 +944,7 @@ def import_function(
         check_connection(driver)
         print("Knowledge base is successfully connected", flush=True)
 
-        run_cypher_scripts(driver, regions_filename, landmarks_filename, map_sectors_filename, base_dir, start)
+        run_cypher_scripts(driver, regions_filename, landmarks_filename, map_sectors_filename, base_dir, save_existing_id_codes, start)
 
 
 def main():
@@ -705,6 +963,13 @@ def main():
             args[arg_pair[0].strip()] = arg_pair[1].strip()
     if len(AVAILABLE_ARGS) != len(args.keys()):
         raise AttributeError("Not all required attributes are given.")
+    if args["save_existing_id_codes"].lower() == "true" or args["save_existing_id_codes"].lower() == 't':
+        args["save_existing_id_codes"] = True
+    elif args["save_existing_id_codes"].lower() == "false" or args["save_existing_id_codes"].lower() == 'f':
+        args["save_existing_id_codes"] = False
+    else:
+        raise AttributeError("Available values for save_existing_id_codes are: True, T to set param to True; False, F to set param to False (case insensitive).")
+    args["save_existing_id_codes"] = True if 
     import_function(**args)
 
 
