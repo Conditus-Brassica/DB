@@ -809,13 +809,18 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
                 )
 
     with driver.session() as session:
-        landmarks_amount_res = session.run(
+        amount_res = session.run(
             """
-            MATCH (landmark: Landmark) RETURN count(landmark) AS landmarks_amount;
+            MATCH (landmark: Landmark)
+            WITH count(landmark) AS landmarks_amount
+            MATCH (region: Region)
+            RETURN count(region) AS regions_amount, landmarks_amount
             """
         )
-        landmarks_amount = landmarks_amount_res.single().get("landmarks_amount")
-        for i in range(landmarks_amount):
+        amount_record = amount_res.single()
+        landmarks_amount = amount_record.get("landmarks_amount")
+        regions_amount = amount_record.get("regions_amount")
+        for i in range(landmarks_amount + regions_amount):  # max possible amount of records
             result = session.run(
                 """
                 MATCH (country: Country)
@@ -877,10 +882,13 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
                 offset=i
             )
             record = result.single()
-            step_on_record(record)
+            if record:
+                step_on_record(record)
+            else:
+                break  # All available records has been used
 
 
-def run_cypher_scripts(  # TODO define case of using reencoding and encoding
+def run_cypher_scripts(
     driver,
     regions_filename, landmarks_filename, map_sectors_filename,
     base_dir,
