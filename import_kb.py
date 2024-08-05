@@ -977,7 +977,6 @@ def main():
         args["save_existing_id_codes"] = False
     else:
         raise AttributeError("Available values for save_existing_id_codes are: True, T to set param to True; False, F to set param to False (case insensitive).")
-    args["save_existing_id_codes"] = True if 
     import_function(**args)
 
 
