@@ -213,167 +213,86 @@ def import_landmarks(driver, filename):
     with driver.session() as session:
         session.run(
             """
+            // Author: Vodohleb04
             // Importing landmarks from json
-            CALL apoc.load.json($filename) YIELD value
-            UNWIND value AS landmark_json
-            WITH landmark_json
-            MERGE (landmark: Landmark {name: landmark_json.name})
-            SET 
-                landmark.latitude = toFloat(landmark_json.coordinates.latitude),
-                landmark.longitude = toFloat(landmark_json.coordinates.longitude)
-            MERGE (category: LandmarkCategory {name: landmark_json.category})
-            MERGE (landmark)-[refer:REFERS]->(category)
-            SET refer.main_category_flag = True
-            WITH landmark_json, landmark,
-                CASE
-                    WHEN landmark_json.subcategory = [] THEN [null]
-                    WHEN landmark_json.subcategory IS null THEN [null]
-                    ELSE landmark_json.subcategory
-                END AS subcategories_names
-            UNWIND subcategories_names AS subcategory_name
-            WITH landmark_json, landmark, subcategory_name
-            CALL apoc.do.when(
-                subcategory_name IS NOT null,
-                "
-                    MERGE (subcategory: LandmarkCategory {name: subcategory_name})
-                    MERGE (landmark)-[refer:REFERS]->(subcategory)
-                    SET refer.main_category_flag = False
-                    RETURN True
-                ",
-                "RETURN False",
-                {
-                    landmark: landmark,
-                    subcategory_name: subcategory_name
-                }
-            ) YIELD value AS subcategory_result
-            WITH landmark_json, landmark, subcategory_result
-            CALL apoc.do.case(
-                [
-                    landmark_json.located.state IS null,
-                    "
-                        MATCH (state_city: Region {name: located.city})
-                        SET state_city:State:City
-                        WITH landmark, located, state_city
-                        MATCH (district: Region {name: located.district})
-                        SET district:District
-                        MERGE (landmark)-[:LOCATED]->(district)
-                        RETURN 'state-city'
-                    ",
-                    landmark_json.located.district IS null,
-                    "
-                        MERGE (district_city: Region {name: located.city})
-                        SET district_city:District:City
-                        MERGE (landmark)-[:LOCATED]->(district_city)
-                        RETURN 'district-city'
-                    "
-                ],
-                "
-                    MATCH (district: District {name: located.district})
-                    MERGE (city: Region {name: located.city})
-                        ON CREATE SET city:City
-                    WITH located, landmark, city, district
-                    OPTIONAL MATCH (:District)-[inclusion:INCLUDE]->(city)
-                    WITH located, landmark, city, district, inclusion
-                    CALL apoc.do.when(
-                        inclusion IS NULL,
-                        'CREATE (district)-[:INCLUDE]->(city) RETURN True',
-                        'RETURN False',
-                        {district: district, city: city}
-                    ) YIELD value AS inclusion_already_exists
-                    WITH city, located, landmark
-                    CALL {
-                            WITH city, located, landmark
-                            MATCH 
-                                (city)
-                                    <-[:INCLUDE]-
-                                (district: District)
-                                    <-[:INCLUDE]-
-                                (state: State)
-                                    <-[:INCLUDE]-
-                                (country:Country)
-                            WITH located, city, district, state, country, landmark
-                            CALL apoc.do.case(
-                                [
-                                    country.name <> located.country,
-                                    '
-                                        MERGE (this_city:Region:City 
-                                            {name: located.city + opened_parenthesis + located.country + closed_parenthesis}
-                                        )
-                                        WITH *
-                                        MATCH (other_city: City WHERE other_city.name = city_name)
-                                        WITH *
-                                        SET other_city.name = toString(
-                                            other_city.name + opened_parenthesis + other_country_name + closed_parenthesis
-                                        )
-                                        WITH this_city, landmark, located
-                                        MATCH (this_district:District {name: located.district})
-                                        MERGE (this_city)<-[:INCLUDE]-(this_district)
-                                        MERGE (landmark)-[:LOCATED]->(this_city)
-                                        RETURN 1
-                                    ',
-                                    district.name <> located.district,
-                                    '
-                                        MERGE (this_city:Region:City 
-                                            {name: located.city + opened_parenthesis + located.district + closed_parenthesis}
-                                        )
-                                        WITH *
-                                        MATCH (other_city: City WHERE other_city.name = city_name)
-                                        WITH *
-                                        SET other_city.name = toString(
-                                            other_city.name + opened_parenthesis + other_district_name + closed_parenthesis
-                                        )
-                                        WITH this_city, landmark, located
-                                        MATCH (this_district:District {name: located.district})
-                                        MERGE (this_city)<-[:INCLUDE]-(this_district)
-                                        MERGE (landmark)-[:LOCATED]->(this_city)
-                                        RETURN 2
-                                    ',
-                                    state.name <> located.state,
-                                    '
-                                        MERGE (this_city:Region:City 
-                                            {name: located.city + opened_parenthesis + located.district + spacer + located.state + closed_parenthesis}
-                                        )
-                                        WITH *
-                                        MATCH (other_city: City WHERE other_city.name = city_name)
-                                        WITH *
-                                        SET other_city.name = toString(
-                                            other_city.name + opened_parenthesis + other_district_name + spacer + other_state_name + closed_parenthesis
-                                        )
-                                        WITH this_city, landmark, located
-                                        MATCH (this_district:District {name: located.district})
-                                        MERGE (this_city)<-[:INCLUDE]-(this_district)
-                                        MERGE (landmark)-[:LOCATED]->(this_city)
-                                        RETURN 3
-                                    '
-                                ], 
-                                '
-                                    MATCH (this_city: City WHERE this_city.name = city_name)
-                                    MERGE (landmark)-[:LOCATED]->(this_city)
-                                    RETURN 4
-                                ',
-                                {
-                                    landmark: landmark,
-                                    city_name: city.name,
-                                    other_country_name: country.name,
-                                    other_state_name: state.name,
-                                    other_district_name: district.name,
-                                    located: located,
-                                    opened_parenthesis: '(',
-                                    closed_parenthesis: ')',
-                                    spacer: ' '
-                                }
-                            ) YIELD value AS city_match
-                            RETURN city_match
+            :auto
+            CALL apoc.load.json("file:///data.json") YIELD value  // load list of landmarks
+            CALL {
+                WITH value
+                UNWIND value AS landmark_json  // for landmark in list of landmars
+                    MERGE (
+                        landmark: Landmark {
+                            name: landmark_json.name,
+                            latitude: toFloat(landmark_json.coordinates.latitude),
+                            longitude: toFloat(landmark_json.coordinates.longitude)}
+                    )  // CREATE or MATCH landmark (landmark uniqueness is defined by (name, latitude, longitude)) 
+                    MERGE (category: LandmarkCategory {name: landmark_json.category})
+                    MERGE (landmark)-[refer:REFERS]->(category)
+                        SET refer.main_category_flag = True
+                    WITH landmark_json, landmark,
+                        CASE
+                            WHEN landmark_json.subcategory = [] THEN [null]
+                            WHEN landmark_json.subcategory IS null THEN [null]
+                            ELSE landmark_json.subcategory
+                        END AS subcategories_names
+                    UNWIND subcategories_names AS subcategory_name  // For category name in subcategories list
+                        WITH landmark_json, landmark, subcategory_name
+                        CALL apoc.do.when(
+                            subcategory_name IS NOT null, 
+                            "
+                                MERGE (subcategory: LandmarkCategory {name: subcategory_name})
+                                MERGE (landmark)-[refer:REFERS]->(subcategory)
+                                SET refer.main_category_flag = False
+                                RETURN True
+                            ",
+                            "RETURN False",
+                            {
+                                landmark: landmark,
+                                subcategory_name: subcategory_name
+                            }
+                        ) YIELD value AS subcategory_result
+                    WITH landmark_json, landmark, subcategory_result
+                    WITH landmark_json
+                    CALL apoc.do.case(  
+                    // Define type of region where landmark is located.
+                    // Create region if needed. Create relations between regions if needed and llandmark if needed
+                        [
+                            landmark_json.located.state IS null,  // Located in Minks and other cities of republican subordination
+                            // (:State:City)-[:INCLUDE]->(:District)<-[:LOCATED]-(:Landmark)
+                            "
+                                MATCH (district: Region {name: located.district + ' (' + located.country + ', ' + located.city + ')'})
+                                MERGE (landmark)-[:LOCATED]->(district)
+                                RETURN 'state-city'
+                            ",
+                            landmark_json.located.district IS null,  // Located in district or in city of state subordination
+                            // (:State)-[:INCLUDE]->(:District)<-[:LOCATED]-(:Landmark) or
+                            // (:State)-[:INCLUDE]->(:District:City)<-[:LOCATED]-(:Landmark)
+                            "
+                                MATCH (district_city: Region {name: located.city + ' (' + located.country + ', ' + located.state + ')'})
+                                MERGE (landmark)-[:LOCATED]->(district_city)
+                                RETURN 'district-city'
+                            "
+                        ],
+                        // Located in city (:State)-[:INCLUDE]->(:District)-[:INCLUDE]->(:City)<-[:LOCATED]-(:Landmark)
+                        // Such cities are created in this script
+                        "        
+                            MATCH (district: District {name: located.district + ' (' + located.country + ', ' + located.state + ')'})
+                            MERGE (city: Region {name: located.city + ' (' + located.country + ', ' + located.state + ', ' + located.district + ')'})
+                                ON CREATE SET city:City
+                            WITH located, landmark, city, district
+                            MERGE (district)-[:INCLUDE]->(city)
+                            WITH located, landmark, city
+                            MERGE (landmark)-[:LOCATED]->(city)
+                            RETURN 'city'
+                        ",
+                        {
+                            located: landmark_json.located,
+                            landmark: landmark
                         }
-                        RETURN 'city'
-                ",
-                {
-                    located: landmark_json.located,
-                    landmark: landmark
-                }
-            ) YIELD value AS city_type
-            WITH subcategory_result, city_type
-            RETURN 1 as res, subcategory_result, city_type
+                    ) YIELD value AS city_type
+                    WITH subcategory_result, city_type
+                    RETURN 1 as res, subcategory_result, city_type
+                } IN TRANSACTIONS RETURN subcategory_result, city_type, res;
             """,
             filename=filename
         )
