@@ -53,6 +53,11 @@ INDEXES_QUERIES = [
     ON EACH [region.name];
     """,
     """
+    CREATE TEXT INDEX region_name_text_index IF NOT EXISTS
+    FOR (region:Region)
+    ON (region.name);
+    """,
+    """
     CREATE TEXT INDEX landmark_name_text_index IF NOT EXISTS
     FOR (landmark: Landmark)
     ON (landmark.name);
