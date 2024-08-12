@@ -138,14 +138,14 @@ def import_regions(driver, filename):
                                 WHEN type_element = 'city' THEN 'City'
                             END AS capitalized_type_element
                         RETURN COLLECT(capitalized_type_element) AS regionType
-                    }  // Converte regions_json.type list to region list of region types
+                    }  // Convert regions_json.type list to region list of region types
                     WITH 
                         region_json,
                         regionType,
                         CASE
                             WHEN region_json.part_of.country IS null THEN ''  // If country
                             WHEN region_json.part_of.state IS null THEN ' (' + region_json.part_of.country + ')'  // If state
-                            WHEN region_json.part_of.district IS null THEN ' (' + region_json.part_of.country + ', ' + region_json.part_of.state + ')'  // If district
+                            ELSE ' (' + region_json.part_of.country + ', ' + region_json.part_of.state + ')'  // If district
                         END AS name_postscript
                     MERGE (region: Region {name: region_json.name + name_postscript})
                     WITH region_json, regionType, region
@@ -171,7 +171,7 @@ def import_regions(driver, filename):
                                         WHEN type_element = 'city' THEN 'City'
                                     END AS capitalized_type_element
                                 RETURN COLLECT(capitalized_type_element) AS borderedRegionType
-                            }  // Converte regions_json.bordered.type list to region list of region types
+                            }  // Convert regions_json.bordered.type list to region list of region types
                             WITH
                                 borderedRegionJSON,
                                 labeledRegion,
@@ -179,7 +179,7 @@ def import_regions(driver, filename):
                                 CASE
                                     WHEN borderedRegionJSON.part_of.country IS null THEN ''  // If country
                                     WHEN borderedRegionJSON.part_of.state IS null THEN ' (' + borderedRegionJSON.part_of.country + ')'  // If state
-                                    WHEN borderedRegionJSON.part_of.district IS null THEN ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'  // If district
+                                    ELSE ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'  // If district
                                 END AS name_postscript
                             MERGE (borderedRegion: Region {name: borderedRegionJSON.name + name_postscript})
                             WITH labeledRegion, borderedRegionType, borderedRegion
