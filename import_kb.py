@@ -173,6 +173,7 @@ def import_regions(driver, filename):
                                 RETURN COLLECT(capitalized_type_element) AS borderedRegionType
                             }  // Converte regions_json.bordered.type list to region list of region types
                             WITH
+                                borderedRegionJSON,
                                 labeledRegion,
                                 borderedRegionType,
                                 CASE
