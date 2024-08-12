@@ -252,7 +252,6 @@ def import_landmarks(driver, filename):
                             }
                         ) YIELD value AS subcategory_result
                     WITH landmark_json, landmark, subcategory_result
-                    WITH landmark_json
                     CALL apoc.do.case(  
                     // Define type of region where landmark is located.
                     // Create region if needed. Create relations between regions if needed and llandmark if needed
