@@ -221,6 +221,7 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                             ELSE ' (' + region_json.part_of.country + ', ' + region_json.part_of.state + ')'  // If district
                         END AS name_postscript
                     CALL {
+                        WITH region_json, name_postscript
                         CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.name + name_postscript)
                             YIELD score, node AS region
                         RETURN region
@@ -232,9 +233,10 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                         // (or Cities with labels of country, state, district)
                         // [:INCLUDE] for simple cities are created in import_landmarks function
                         [  
-                            region_json.part_of.state IS null,
+                            region_json.part_of.state IS null AND region_json.part_of.country IS NOT null,
                             "
                                 CALL {
+                                    WITH region_json
                                     CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.part_of.country)
                                         YIELD score, node AS country
                                     RETURN country
@@ -244,9 +246,10 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                 MERGE (country)-[:INCLUDE]->(region)
                                 RETURN 'state'
                             ",
-                            region_json.part_of.district IS null,
+                            region_json.part_of.district IS null AND region_json.part_of.country IS NOT null,
                             "
                                 CALL {
+                                    WITH region_json
                                     CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.part_of.country)
                                         YIELD score, node AS country
                                     RETURN country
@@ -254,6 +257,7 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                         LIMIT 1
                                 }
                                 CALL {
+                                    WITH region_json
                                     CALL db.index.fulltext.queryNodes(
                                         'region_name_fulltext_index', region_json.part_of.state + ' (' + region_json.part_of.country + ')'
                                     )
@@ -312,6 +316,7 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                 END AS bordered_district_name
                             
                             CALL {
+                                WITH borderedRegionJSON, bordered_region_name_postscript
                                 CALL db.index.fulltext.queryNodes(
                                     'region_name_fulltext_index', borderedRegionJSON.name + bordered_region_name_postscript
                                 )
@@ -325,21 +330,24 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     bordered_district_name IS NOT null,
                                     '
                                         CALL {
-                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_country_name)
+                                            WITH region_index_name, bordered_country_name
+                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_country_name)
                                                 YIELD score, node AS country
                                             RETURN country
                                                 ORDER BY score DESC
                                                 LIMIT 1
                                         }
                                         CALL {
-                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_state_name)
+                                            WITH region_index_name, bordered_state_name
+                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_state_name)
                                                 YIELD score, node AS state
                                             RETURN state
                                                 ORDER BY score DESC
                                                 LIMIT 1
                                         }
                                         CALL {
-                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_district_name)
+                                            WITH region_index_name, bordered_district_name
+                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_district_name)
                                                 YIELD score, node AS district
                                             RETURN district
                                                 ORDER BY score DESC
@@ -353,14 +361,16 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     bordered_state_name IS NOT null,
                                     '
                                         CALL {
-                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_country_name)
+                                            WITH region_index_name, bordered_country_name
+                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_country_name)
                                                 YIELD score, node AS country
                                             RETURN country
                                                 ORDER BY score DESC
                                                 LIMIT 1
                                         }
                                         CALL {
-                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_state_name)
+                                            WITH region_index_name, bordered_state_name
+                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_state_name)
                                                 YIELD score, node AS state
                                             RETURN state
                                                 ORDER BY score DESC
@@ -376,7 +386,8 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                 {
                                     bordered_district_name: bordered_district_name,
                                     bordered_state_name: bordered_state_name,
-                                    bordered_country_name: bordered_country_name
+                                    bordered_country_name: bordered_country_name,
+                                    region_index_name: 'region_name_fulltext_index'
                                 }
                             ) YIELD value AS bordered_region_type
                             WITH * 
