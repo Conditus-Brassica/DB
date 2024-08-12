@@ -194,8 +194,8 @@ def import_regions(driver, filename):
                         }
                     ) YIELD value AS neighbour_value
                     WITH *
-                    RETURN 1 as res, included_value AS has_included, neighbour_value AS has_neighbour
-            } IN TRANSACTIONS RETURN res, has_included, has_neighbour
+                    RETURN 1 as res, neighbour_value AS has_neighbour
+            } IN TRANSACTIONS RETURN res, has_neighbour
             """,
             filename=filename
         )
