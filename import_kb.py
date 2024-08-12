@@ -202,6 +202,134 @@ def import_regions(driver, filename):
         )
 
 
+def import_include_from_import_regions(driver, filename="regions.json"):
+    filename = f"file:///{filename}"
+    with driver.session() as session:
+        session.run(
+            """
+            // Imports regions from json file (Regions of types: Country, State, District)
+            CALL apoc.load.json($filename) YIELD value
+            CALL {
+                WITH value
+                UNWIND value AS region_json  // For region in regions list
+                    WITH 
+                        region_json,
+                        CASE
+                            WHEN region_json.part_of.country IS null THEN ''  // If country
+                            WHEN region_json.part_of.state IS null THEN ' (' + region_json.part_of.country + ')'  // If state
+                            ELSE ' (' + region_json.part_of.country + ', ' + region_json.part_of.state + ')'  // If district
+                        END AS name_postscript
+                    MATCH (region: Region) WHERE region.name STARTS WITH region_json.name + name_postscript
+                    CALL apoc.do.case(  
+                        // Create [:INCLUDE] for countries, states and districts
+                        // (or Cities with labels of country, state, district)
+                        // [:INCLUDE] for simple cities are created in import_landmarks function
+                        [  
+                            region_json.part_of.state IS null,
+                            "
+                                MATCH (country: Country) WHERE country.name STARTS WITH region_json.part_of.country
+                                MERGE (country)-[:INCLUDE]->(region)
+                                RETURN 'state'
+                            ",
+                            region_json.part_of.district IS null,
+                            "
+                                MATCH (country: Country) WHERE country.name STARTS WITH region_json.part_of.country
+                                MATCH (state: State) WHERE state.name STARTS WITH region_json.part_of.state + ' (' + region_json.part_of.country + ')'
+                                MERGE (country)-[:INCLUDE]->(state)
+                                WITH state, region
+                                MERGE (state)-[:INCLUDE]->(region)
+                                RETURN 'district'
+                            "
+                        ],
+                        "RETURN 'country'",  // If region is country
+                        {
+                            region_json: region_json,
+                            region: region
+                        }
+                    ) YIELD value as region_type
+                    WITH region_json
+            
+                    UNWIND 
+                        CASE 
+                            WHEN region_json.bordered = [] THEN [null]
+                            WHEN region_json.bordered IS null THEN [null]
+                            ELSE region_json.bordered
+                        END AS borderedRegionJSON
+                    WITH borderedRegionJSON
+                    CALL apoc.do.when(
+                        borderedRegionJSON IS NOT null,
+                        "
+                            WITH
+                                borderedRegionJSON,
+                                CASE
+                                    WHEN borderedRegionJSON.part_of.country IS null THEN ''  // If country
+                                    WHEN borderedRegionJSON.part_of.state IS null THEN ' (' + borderedRegionJSON.part_of.country + ')'  // If state
+                                    ELSE ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'  // If district
+                                END AS region_name_postscript,
+                                CASE 
+                                    WHEN borderedRegionJSON.part_of.country IS NOT null THEN borderedRegionJSON.part_of.country  
+                                    ELSE borderedRegionJSON.part_of.name
+                                END AS bordered_country_name,
+                                CASE
+                                    WHEN borderedRegionJSON.part_of.state IS null AND borderedRegionJSON.part_of.country IS null
+                                        THEN null
+                                    WHEN borderedRegionJSON.part_of.state IS null AND borderedRegionJSON.part_of.country IS NOT null
+                                        THEN borderedRegionJSON.name + ' (' + borderedRegionJSON.part_of.country + ')'
+                                    WHEN borderedRegionJSON.part_of.state IS NOT null
+                                        THEN borderedRegionJSON.part_of.state + ' (' + borderedRegionJSON.part_of.country + ')'
+                                END AS bordered_state_name,
+                                CASE 
+                                    WHEN borderedRegionJSON.part_of.state IS NOT null
+                                        THEN borderedRegionJSON.name + ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'
+                                    ELSE null
+                                END AS bordered_district_name
+                            
+                            MATCH (borderedRegion: Region) WHERE borderedRegion.name STARTS WITH borderedRegionJSON.name + region_name_postscript
+                            CALL apoc.do.case(
+                                [
+                                    bordered_district_name IS NOT null,
+                                    '
+                                        MATCH (country: Country) WHERE country.name STARTS WITH bordered_country_name
+                                        MATCH (state: State) WHERE state.name STARTS WITH bordered_state_name
+                                        MATCH (district: District) WHERE district.name STARTS WITH bordered_district_name
+                                        MERGE (country)-[:INCLUDE]->(state)
+                                        WITH state, district
+                                        MERGE (state)-[:INCLUDE]->(district)
+                                        RETURN 1  // district
+                                    ',
+                                    bordered_state_name IS NOT null,
+                                    '
+                                        MATCH (country: Country) WHERE country.name STARTS WITH bordered_country_name
+                                        MATCH (state: State) WHERE state.name STARTS WITH bordered_state_name
+                                        MERGE (country)-[:INCLUDE]->(state)
+                                        RETURN 2  // state
+                                    '
+                                ],
+                                '
+                                    RETURN 3  // If bordered region is country
+                                ',
+                                {
+                                    bordered_district_name: bordered_district_name,
+                                    bordered_state_name: bordered_state_name,
+                                    bordered_country_name: bordered_country_name
+                                }
+                            ) YIELD value AS bordered_region_type
+                            WITH * 
+                            RETURN True
+                        ",
+                        "RETURN False",
+                        {
+                            borderedRegionJSON: borderedRegionJSON
+                        }
+                    ) YIELD value AS neighbour_value
+                    WITH *
+                    RETURN 1 as res, neighbour_value AS has_neighbour
+            } IN TRANSACTIONS RETURN res, has_neighbour
+            """,
+            filename=filename
+        )
+
+
 def check_connection(driver):
     with driver.session() as session:
         session.run(
@@ -219,7 +347,7 @@ def import_landmarks(driver, filename):
             CALL apoc.load.json("file:///$filename") YIELD value  // load list of landmarks
             CALL {
                 WITH value
-                UNWIND value AS landmark_json  // for landmark in list of landmars
+                UNWIND value AS landmark_json  // for landmark in list of landmarks
                     MERGE (
                         landmark: Landmark {
                             name: landmark_json.name,
@@ -254,7 +382,7 @@ def import_landmarks(driver, filename):
                     WITH landmark_json, landmark, subcategory_result
                     CALL apoc.do.case(  
                     // Define type of region where landmark is located.
-                    // Create region if needed. Create relations between regions if needed and llandmark if needed
+                    // Create region if needed. Create relations between regions if needed and landmark if needed
                         [
                             landmark_json.located.state IS null,  // Located in Minks and other cities of republican subordination
                             // (:State:City)-[:INCLUDE]->(:District)<-[:LOCATED]-(:Landmark)
@@ -829,6 +957,11 @@ def run_cypher_scripts(
         print(f"Importing regions from \"file:///{regions_filename}\"...", flush=True)
         import_regions(driver, regions_filename)
         print(f"Regions have been imported in {datetime.datetime.now() - last_operation}", flush=True)
+        last_operation = datetime.datetime.now()
+
+        print(f"Importing hierarchy of regions from \"file:///{regions_filename}\"...")
+        import_include_from_import_regions(driver, regions_filename)
+        print(f"Hierarchy of regions have been imported in {datetime.datetime.now() - last_operation}")
         last_operation = datetime.datetime.now()
 
         print(f"Importing map sectors from \"file:///{map_sectors_filename}\"...", flush=True)
