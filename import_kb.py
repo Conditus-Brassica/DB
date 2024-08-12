@@ -215,7 +215,6 @@ def import_landmarks(driver, filename):
             """
             // Author: Vodohleb04
             // Importing landmarks from json
-            :auto
             CALL apoc.load.json("file:///$filename") YIELD value  // load list of landmarks
             CALL {
                 WITH value
