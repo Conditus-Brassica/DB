@@ -149,7 +149,7 @@ def import_regions(driver, filename):
                         END AS name_postscript
                     MERGE (region: Region {name: region_json.name + name_postscript})
                     WITH region_json, regionType, region
-                    CALL apoc.create.addLabels(region, [regionType]) YIELD node AS labeledRegion
+                    CALL apoc.create.addLabels(region, regionType) YIELD node AS labeledRegion
                     WITH region_json, labeledRegion
                     UNWIND 
                         CASE 
@@ -182,7 +182,7 @@ def import_regions(driver, filename):
                                 END AS name_postscript
                             MERGE (borderedRegion: Region {name: borderedRegionJSON.name + name_postscript})
                             WITH labeledRegion, borderedRegionType, borderedRegion
-                            CALL apoc.create.addLabels(borderedRegion, [borderedRegionType]) YIELD node AS labeledBorderedRegion
+                            CALL apoc.create.addLabels(borderedRegion, borderedRegionType) YIELD node AS labeledBorderedRegion
                             WITH labeledRegion, labeledBorderedRegion
                             MERGE (labeledRegion)-[:NEIGHBOUR_REGION]-(labeledBorderedRegion)
                             RETURN True
