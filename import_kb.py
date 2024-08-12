@@ -220,7 +220,13 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                             WHEN region_json.part_of.state IS null THEN ' (' + region_json.part_of.country + ')'  // If state
                             ELSE ' (' + region_json.part_of.country + ', ' + region_json.part_of.state + ')'  // If district
                         END AS name_postscript
-                    MATCH (region: Region) WHERE region.name STARTS WITH region_json.name + name_postscript
+                    CALL {
+                        CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.name + name_postscript)
+                            YIELD score, node AS region
+                        RETURN region
+                            ORDER BY score DESC
+                            LIMIT 1
+                    }
                     CALL apoc.do.case(  
                         // Create [:INCLUDE] for countries, states and districts
                         // (or Cities with labels of country, state, district)
@@ -228,14 +234,34 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                         [  
                             region_json.part_of.state IS null,
                             "
-                                MATCH (country: Country) WHERE country.name STARTS WITH region_json.part_of.country
+                                CALL {
+                                    CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.part_of.country)
+                                        YIELD score, node AS country
+                                    RETURN country
+                                        ORDER BY score DESC
+                                        LIMIT 1
+                                }
                                 MERGE (country)-[:INCLUDE]->(region)
                                 RETURN 'state'
                             ",
                             region_json.part_of.district IS null,
                             "
-                                MATCH (country: Country) WHERE country.name STARTS WITH region_json.part_of.country
-                                MATCH (state: State) WHERE state.name STARTS WITH region_json.part_of.state + ' (' + region_json.part_of.country + ')'
+                                CALL {
+                                    CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.part_of.country)
+                                        YIELD score, node AS country
+                                    RETURN country
+                                        ORDER BY score DESC
+                                        LIMIT 1
+                                }
+                                CALL {
+                                    CALL db.index.fulltext.queryNodes(
+                                        'region_name_fulltext_index', region_json.part_of.state + ' (' + region_json.part_of.country + ')'
+                                    )
+                                        YIELD score, node AS state
+                                    RETURN state
+                                        ORDER BY score DESC
+                                        LIMIT 1
+                                }
                                 MERGE (country)-[:INCLUDE]->(state)
                                 WITH state, region
                                 MERGE (state)-[:INCLUDE]->(region)
@@ -266,7 +292,7 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     WHEN borderedRegionJSON.part_of.country IS null THEN ''  // If country
                                     WHEN borderedRegionJSON.part_of.state IS null THEN ' (' + borderedRegionJSON.part_of.country + ')'  // If state
                                     ELSE ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'  // If district
-                                END AS region_name_postscript,
+                                END AS bordered_region_name_postscript,
                                 CASE 
                                     WHEN borderedRegionJSON.part_of.country IS NOT null THEN borderedRegionJSON.part_of.country  
                                     ELSE borderedRegionJSON.part_of.name
@@ -285,14 +311,40 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     ELSE null
                                 END AS bordered_district_name
                             
-                            MATCH (borderedRegion: Region) WHERE borderedRegion.name STARTS WITH borderedRegionJSON.name + region_name_postscript
+                            CALL {
+                                CALL db.index.fulltext.queryNodes(
+                                    'region_name_fulltext_index', borderedRegionJSON.name + bordered_region_name_postscript
+                                )
+                                    YIELD score, node AS borderedRegion
+                                RETURN borderedRegion
+                                    ORDER BY score DESC
+                                    LIMIT 1
+                            }
                             CALL apoc.do.case(
                                 [
                                     bordered_district_name IS NOT null,
                                     '
-                                        MATCH (country: Country) WHERE country.name STARTS WITH bordered_country_name
-                                        MATCH (state: State) WHERE state.name STARTS WITH bordered_state_name
-                                        MATCH (district: District) WHERE district.name STARTS WITH bordered_district_name
+                                        CALL {
+                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_country_name)
+                                                YIELD score, node AS country
+                                            RETURN country
+                                                ORDER BY score DESC
+                                                LIMIT 1
+                                        }
+                                        CALL {
+                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_state_name)
+                                                YIELD score, node AS state
+                                            RETURN state
+                                                ORDER BY score DESC
+                                                LIMIT 1
+                                        }
+                                        CALL {
+                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_district_name)
+                                                YIELD score, node AS district
+                                            RETURN district
+                                                ORDER BY score DESC
+                                                LIMIT 1
+                                        }
                                         MERGE (country)-[:INCLUDE]->(state)
                                         WITH state, district
                                         MERGE (state)-[:INCLUDE]->(district)
@@ -300,8 +352,20 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     ',
                                     bordered_state_name IS NOT null,
                                     '
-                                        MATCH (country: Country) WHERE country.name STARTS WITH bordered_country_name
-                                        MATCH (state: State) WHERE state.name STARTS WITH bordered_state_name
+                                        CALL {
+                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_country_name)
+                                                YIELD score, node AS country
+                                            RETURN country
+                                                ORDER BY score DESC
+                                                LIMIT 1
+                                        }
+                                        CALL {
+                                            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', bordered_state_name)
+                                                YIELD score, node AS state
+                                            RETURN state
+                                                ORDER BY score DESC
+                                                LIMIT 1
+                                        }
                                         MERGE (country)-[:INCLUDE]->(state)
                                         RETURN 2  // state
                                     '
@@ -345,7 +409,7 @@ def import_landmarks(driver, filename):
             """
             // Author: Vodohleb04
             // Importing landmarks from json
-            CALL apoc.load.json("file:///$filename") YIELD value  // load list of landmarks
+            CALL apoc.load.json($filename) YIELD value
             CALL {
                 WITH value
                 UNWIND value AS landmark_json  // for landmark in list of landmarks
@@ -388,7 +452,15 @@ def import_landmarks(driver, filename):
                             landmark_json.located.state IS null,  // Located in Minks and other cities of republican subordination
                             // (:State:City)-[:INCLUDE]->(:District)<-[:LOCATED]-(:Landmark)
                             "
-                                MATCH (district: Region {name: located.district + ' (' + located.country + ', ' + located.city + ')'})
+                                CALL {
+                                    CALL db.index.fulltext.queryNodes(
+                                        'region_name_fulltext_index', located.district + ' (' + located.country + ', ' + located.city + ')'
+                                    )
+                                        YIELD score, node AS district
+                                    RETURN district
+                                        ORDER BY score DESC
+                                        LIMIT 1
+                                }
                                 MERGE (landmark)-[:LOCATED]->(district)
                                 RETURN 'state-city'
                             ",
@@ -396,15 +468,31 @@ def import_landmarks(driver, filename):
                             // (:State)-[:INCLUDE]->(:District)<-[:LOCATED]-(:Landmark) or
                             // (:State)-[:INCLUDE]->(:District:City)<-[:LOCATED]-(:Landmark)
                             "
-                                MATCH (district_city: Region {name: located.city + ' (' + located.country + ', ' + located.state + ')'})
+                                CALL {
+                                    CALL db.index.fulltext.queryNodes(
+                                        'region_name_fulltext_index', located.city + ' (' + located.country + ', ' + located.state + ')'
+                                    )
+                                        YIELD score, node AS district_city
+                                    RETURN district_city
+                                        ORDER BY score DESC
+                                        LIMIT 1
+                                }
                                 MERGE (landmark)-[:LOCATED]->(district_city)
                                 RETURN 'district-city'
                             "
                         ],
                         // Located in city (:State)-[:INCLUDE]->(:District)-[:INCLUDE]->(:City)<-[:LOCATED]-(:Landmark)
                         // Such cities are created in this script
-                        "        
-                            MATCH (district: District {name: located.district + ' (' + located.country + ', ' + located.state + ')'})
+                        "
+                            CALL {
+                                CALL db.index.fulltext.queryNodes(
+                                    'region_name_fulltext_index', located.district + ' (' + located.country + ', ' + located.state + ')'
+                                )
+                                    YIELD score, node AS district
+                                RETURN district
+                                    ORDER BY score DESC
+                                    LIMIT 1
+                            }
                             MERGE (city: Region {name: located.city + ' (' + located.country + ', ' + located.state + ', ' + located.district + ')'})
                                 ON CREATE SET city:City
                             WITH located, landmark, city, district
@@ -419,8 +507,8 @@ def import_landmarks(driver, filename):
                         }
                     ) YIELD value AS city_type
                     WITH subcategory_result, city_type
-                    RETURN 1 as res, subcategory_result, city_type
-                } IN TRANSACTIONS RETURN subcategory_result, city_type, res;
+                RETURN 1 as res, subcategory_result, city_type
+            } IN TRANSACTIONS RETURN subcategory_result, city_type, res;
             """,
             filename=filename
         )
@@ -434,7 +522,13 @@ def import_map_sectors(driver, filename):
             // Imports map seqtors structured in form of quadtree 
             // (it may be not quadtree, but sector is presented in 
             // form of rectangle (top left corner and buttom right corner))
-            MATCH (country:Country WHERE country.name = $country_name)
+            CALL {
+                CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $country_name)
+                    YIELD score, node AS country
+                RETURN country
+                    ORDER BY score DESC
+                    LIMIT 1
+            }
             MERGE (country_map_sectors: CountryMapSectors)
             MERGE (country_map_sectors)<-[:DIVIDED_ON_SECTORS]-(country)
             WITH country_map_sectors
