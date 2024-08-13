@@ -6898,6 +6898,17 @@
       "district",
       "city"
     ],
+    "name": "Брэст",
+    "part_of": {
+      "country": "Беларусь",
+      "state": "Брэсцкая вобласць"
+    }
+  },
+  {
+    "type": [
+      "district",
+      "city"
+    ],
     "name": "Баранавічы",
     "part_of": {
       "country": "Беларусь",
