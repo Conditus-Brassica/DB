@@ -180,9 +180,9 @@ def import_regions(driver, filename):
                                 labeledRegion,
                                 borderedRegionType,
                                 CASE
-                                    WHEN borderedRegionJSON.part_of.country IS null OR borderedRegionJSON.part_of.country  // If country
+                                    WHEN borderedRegionJSON.part_of.country IS null OR borderedRegionJSON.part_of.country = ''  // If country
                                         THEN ''  
-                                    WHEN borderedRegionJSON.part_of.state IS null OR borderedRegionJSON.part_of.state  // If state
+                                    WHEN borderedRegionJSON.part_of.state IS null OR borderedRegionJSON.part_of.state = ''  // If state
                                         THEN ' (' + borderedRegionJSON.part_of.country + ')'  
                                     ELSE ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'  // If district
                                 END AS name_postscript
