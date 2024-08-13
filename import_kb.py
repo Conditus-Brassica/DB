@@ -1074,9 +1074,9 @@ def run_cypher_scripts(
         print(f"Regions have been imported in {datetime.datetime.now() - last_operation}", flush=True)
         last_operation = datetime.datetime.now()
 
-        print(f"Importing hierarchy of regions from \"file:///{regions_filename}\"...")
+        print(f"Importing hierarchy of regions from \"file:///{regions_filename}\"...", flush=True)
         import_include_from_import_regions(driver, regions_filename)
-        print(f"Hierarchy of regions have been imported in {datetime.datetime.now() - last_operation}")
+        print(f"Hierarchy of regions have been imported in {datetime.datetime.now() - last_operation}", flush=True)
         last_operation = datetime.datetime.now()
 
         print(f"Importing map sectors from \"file:///{map_sectors_filename}\"...", flush=True)
