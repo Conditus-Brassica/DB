@@ -90,9 +90,9 @@ INDEXES_QUERIES = [
     ON (userAccount.login);
     """,
     """
-    CREATE FULLTEXT INDEX note_category_name_fulltext_index IF NOT EXISTS
+    CREATE TEXT INDEX note_category_name_text_index IF NOT EXISTS
     FOR (noteCategory: NoteCategory)
-    ON EACH [noteCategory.name];
+    ON (noteCategory.name);
     """,
     """
     CREATE FULLTEXT INDEX note_title_fulltext_index IF NOT EXISTS
