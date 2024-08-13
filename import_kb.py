@@ -222,10 +222,10 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                         END AS name_postscript
                     CALL {
                         WITH region_json, name_postscript
-                        CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.name + name_postscript)
-                            YIELD score, node AS region
+                        MATCH (region: Region)
+                            WHERE region.name STARTS WITH region_json.name + name_postscript
                         RETURN region
-                            ORDER BY score DESC
+                            ORDER BY region.name
                             LIMIT 1
                     }
                     CALL apoc.do.case(  
@@ -237,10 +237,10 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                             "
                                 CALL {
                                     WITH region_json
-                                    CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.part_of.country)
-                                        YIELD score, node AS country
+                                    MATCH (country: Region)
+                                        WHERE country.name STARTS WITH region_json.part_of.country
                                     RETURN country
-                                        ORDER BY score DESC
+                                        ORDER BY country.name
                                         LIMIT 1
                                 }
                                 MERGE (country)-[:INCLUDE]->(region)
@@ -250,20 +250,18 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                             "
                                 CALL {
                                     WITH region_json
-                                    CALL db.index.fulltext.queryNodes('region_name_fulltext_index', region_json.part_of.country)
-                                        YIELD score, node AS country
+                                    MATCH (country: Region)
+                                        WHERE country.name STARTS WITH region_json.part_of.country
                                     RETURN country
-                                        ORDER BY score DESC
+                                        ORDER BY country.name
                                         LIMIT 1
                                 }
                                 CALL {
                                     WITH region_json
-                                    CALL db.index.fulltext.queryNodes(
-                                        'region_name_fulltext_index', region_json.part_of.state + ' (' + region_json.part_of.country + ')'
-                                    )
-                                        YIELD score, node AS state
+                                    MATCH (state: Region)
+                                        WHERE state.name STARTS WITH region_json.part_of.state + ' (' + region_json.part_of.country + ')'
                                     RETURN state
-                                        ORDER BY score DESC
+                                        ORDER BY state.name
                                         LIMIT 1
                                 }
                                 MERGE (country)-[:INCLUDE]->(state)
@@ -314,15 +312,12 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                         THEN borderedRegionJSON.name + ' (' + borderedRegionJSON.part_of.country + ', ' + borderedRegionJSON.part_of.state + ')'
                                     ELSE null
                                 END AS bordered_district_name
-                            
                             CALL {
                                 WITH borderedRegionJSON, bordered_region_name_postscript
-                                CALL db.index.fulltext.queryNodes(
-                                    'region_name_fulltext_index', borderedRegionJSON.name + bordered_region_name_postscript
-                                )
-                                    YIELD score, node AS borderedRegion
+                                MATCH (borderedRegion: Region)
+                                    WHERE borderedRegion.name STARTS WITH borderedRegionJSON.name + bordered_region_name_postscript
                                 RETURN borderedRegion
-                                    ORDER BY score DESC
+                                    ORDER BY borderedRegion.name
                                     LIMIT 1
                             }
                             CALL apoc.do.case(
@@ -330,27 +325,27 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     bordered_district_name IS NOT null,
                                     '
                                         CALL {
-                                            WITH region_index_name, bordered_country_name
-                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_country_name)
-                                                YIELD score, node AS country
+                                            WITH bordered_country_name
+                                            MATCH (country: Region)
+                                                WHERE country.name STARTS WITH bordered_country_name
                                             RETURN country
-                                                ORDER BY score DESC
+                                                ORDER BY country.name
                                                 LIMIT 1
                                         }
                                         CALL {
-                                            WITH region_index_name, bordered_state_name
-                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_state_name)
-                                                YIELD score, node AS state
+                                            WITH bordered_state_name
+                                            MATCH (state: Region)
+                                                WHERE state.name STARTS WITH bordered_state_name
                                             RETURN state
-                                                ORDER BY score DESC
+                                                ORDER BY state.name
                                                 LIMIT 1
                                         }
                                         CALL {
-                                            WITH region_index_name, bordered_district_name
-                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_district_name)
-                                                YIELD score, node AS district
+                                            WITH bordered_district_name
+                                            MATCH (district: Region)
+                                                WHERE district.name STARTS WITH bordered_district_name
                                             RETURN district
-                                                ORDER BY score DESC
+                                                ORDER BY district.name
                                                 LIMIT 1
                                         }
                                         MERGE (country)-[:INCLUDE]->(state)
@@ -361,19 +356,19 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                     bordered_state_name IS NOT null,
                                     '
                                         CALL {
-                                            WITH region_index_name, bordered_country_name
-                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_country_name)
-                                                YIELD score, node AS country
+                                            WITH bordered_country_name
+                                            MATCH (country: Region)
+                                                WHERE country.name STARTS WITH bordered_country_name
                                             RETURN country
-                                                ORDER BY score DESC
+                                                ORDER BY country.name
                                                 LIMIT 1
                                         }
                                         CALL {
-                                            WITH region_index_name, bordered_state_name
-                                            CALL db.index.fulltext.queryNodes(region_index_name, bordered_state_name)
-                                                YIELD score, node AS state
+                                            WITH bordered_state_name
+                                            MATCH (state: Region)
+                                                WHERE state.name STARTS WITH bordered_state_name
                                             RETURN state
-                                                ORDER BY score DESC
+                                                ORDER BY state.name
                                                 LIMIT 1
                                         }
                                         MERGE (country)-[:INCLUDE]->(state)
@@ -386,8 +381,7 @@ def import_include_from_import_regions(driver, filename="regions.json"):
                                 {
                                     bordered_district_name: bordered_district_name,
                                     bordered_state_name: bordered_state_name,
-                                    bordered_country_name: bordered_country_name,
-                                    region_index_name: 'region_name_fulltext_index'
+                                    bordered_country_name: bordered_country_name
                                 }
                             ) YIELD value AS bordered_region_type
                             WITH * 
@@ -464,12 +458,11 @@ def import_landmarks(driver, filename):
                             // (:State:City)-[:INCLUDE]->(:District)<-[:LOCATED]-(:Landmark)
                             "
                                 CALL {
-                                    CALL db.index.fulltext.queryNodes(
-                                        'region_name_fulltext_index', located.district + ' (' + located.country + ', ' + located.city + ')'
-                                    )
-                                        YIELD score, node AS district
+                                    WITH located
+                                    MATCH (district: Region)
+                                        WHERE district.name STARTS WITH located.district + ' (' + located.country + ', ' + located.city + ')'
                                     RETURN district
-                                        ORDER BY score DESC
+                                        ORDER BY district.name
                                         LIMIT 1
                                 }
                                 MERGE (landmark)-[:LOCATED]->(district)
@@ -480,12 +473,11 @@ def import_landmarks(driver, filename):
                             // (:State)-[:INCLUDE]->(:District:City)<-[:LOCATED]-(:Landmark)
                             "
                                 CALL {
-                                    CALL db.index.fulltext.queryNodes(
-                                        'region_name_fulltext_index', located.city + ' (' + located.country + ', ' + located.state + ')'
-                                    )
-                                        YIELD score, node AS district_city
+                                    WITH located
+                                    MATCH (district_city: Region)
+                                        WHERE district_city.name STARTS WITH located.city + ' (' + located.country + ', ' + located.state + ')'
                                     RETURN district_city
-                                        ORDER BY score DESC
+                                        ORDER BY district_city.name
                                         LIMIT 1
                                 }
                                 MERGE (landmark)-[:LOCATED]->(district_city)
@@ -496,12 +488,11 @@ def import_landmarks(driver, filename):
                         // Such cities are created in this script
                         "
                             CALL {
-                                CALL db.index.fulltext.queryNodes(
-                                    'region_name_fulltext_index', located.district + ' (' + located.country + ', ' + located.state + ')'
-                                )
-                                    YIELD score, node AS district
+                                WITH located
+                                MATCH (district: Region)
+                                    WHERE district.name STARTS WITH located.district + ' (' + located.country + ', ' + located.state + ')'
                                 RETURN district
-                                    ORDER BY score DESC
+                                    ORDER BY district.name
                                     LIMIT 1
                             }
                             MERGE (city: Region {name: located.city + ' (' + located.country + ', ' + located.state + ', ' + located.district + ')'})
@@ -534,10 +525,10 @@ def import_map_sectors(driver, filename):
             // (it may be not quadtree, but sector is presented in 
             // form of rectangle (top left corner and buttom right corner))
             CALL {
-                CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $country_name)
-                    YIELD score, node AS country
+                MATCH (country: Region)
+                    WHERE country.name STARTS WITH $country_name
                 RETURN country
-                    ORDER BY score DESC
+                    ORDER BY country.name
                     LIMIT 1
             }
             MERGE (country_map_sectors: CountryMapSectors)
@@ -653,10 +644,10 @@ def encoding_regions_and_landmarks_change_id_code(driver, base_dir):
         nonlocal session
         session.run(
             """
-            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $region_name)
-                YIELD score, node AS region
-            WITH score, region
-                ORDER BY score DESC
+            MATCH (region: Region)
+                WHERE region.name STARTS WITH $region_name
+            WITH region
+                ORDER BY region.name
                 LIMIT 1
             SET region.id_code = $id_code
             """,
@@ -796,10 +787,10 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
         nonlocal session
         last_used_id_code_res = session.run(
             """
-            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $country_name)
-                YIELD score, node AS country
-            WITH score, country
-                ORDER BY score DESC
+            MATCH (country: Region)
+                WHERE country.name STARTS WITH $country_name
+            WITH country
+                ORDER BY country.name
                 LIMIT 1
             OPTIONAL MATCH (country)-[:INCLUDE]->(state: State)
             RETURN country.name AS country_name, max(state.id_code) AS last_used_id_code;
@@ -816,10 +807,10 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
         nonlocal session
         last_used_id_code_res = session.run(
             """
-            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $state_name)
-                YIELD score, node AS state
-            WITH score, state
-                ORDER BY score DESC
+            MATCH (state: Region)
+                WHERE state.name STARTS WITH $state_name
+            WITH state
+                ORDER BY state.name
                 LIMIT 1
             OPTIONAL MATCH (state)-[:INCLUDE]->(district: District)
             RETURN state.name AS state_name, max(district.id_code) AS last_used_id_code;
@@ -836,10 +827,10 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
         nonlocal session
         last_used_id_code_res = session.run(
             """
-            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $district_name)
-                YIELD score, node AS district
-            WITH score, district
-                ORDER BY score DESC
+            MATCH (district: Region)
+                WHERE district.name STARTS WITH $district_name
+            WITH district
+                ORDER BY district.name
                 LIMIT 1
             OPTIONAL MATCH (district)-[:INCLUDE]->(city: City)
             RETURN district.name AS district_name, max(city.id_code) AS last_used_id_code;
@@ -856,10 +847,10 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
         nonlocal session
         last_used_id_code_res = session.run(
             """
-            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $region_name)
-                YIELD score, node AS region
-            WITH score, region
-                ORDER BY score DESC
+            MATCH (region: Region)
+                WHERE region.name STARTS WITH $region_name
+            WITH region
+                ORDER BY region.name
                 LIMIT 1
             OPTIONAL MATCH (region)<-[:LOCATED]-(landmark: Landmark)
             RETURN region.name AS region_name, max(landmark.id_code) AS last_used_id_code;
@@ -876,10 +867,10 @@ def encoding_regions_and_landmarks_no_change_id_code(driver, base_dir):
         nonlocal session
         session.run(
             """
-            CALL db.index.fulltext.queryNodes('region_name_fulltext_index', $region_name)
-                YIELD score, node AS region
-            WITH score, region
-                ORDER BY score DESC
+            MATCH (region: Region)
+                WHERE region.name STARTS WITH $region_name
+            WITH region
+                ORDER BY region.name
                 LIMIT 1
             SET region.id_code = $id_code
             """,
