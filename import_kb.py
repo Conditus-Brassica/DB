@@ -47,7 +47,6 @@ INDEXES_QUERIES = [
     FOR ()-[r]-()
     ON EACH type(r); 
     """,
-    """,
     """
     CREATE TEXT INDEX region_name_text_index IF NOT EXISTS
     FOR (region:Region)
