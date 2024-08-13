@@ -6942,6 +6942,17 @@
       "district",
       "city"
     ],
+    "name": "Жодзіна",
+    "part_of": {
+      "country": "Беларусь",
+      "state": "Мінская вобласць"
+    }
+  },
+  {
+    "type": [
+      "district",
+      "city"
+    ],
     "name": "Віцебск",
     "part_of": {
       "country": "Беларусь",
@@ -6965,17 +6976,6 @@
       "city"
     ],
     "name": "Гродна",
-    "part_of": {
-      "country": "Беларусь",
-      "state": "Гродзенская вобласць"
-    }
-  },
-  {
-    "type": [
-      "district",
-      "city"
-    ],
-    "name": "Ліда",
     "part_of": {
       "country": "Беларусь",
       "state": "Гродзенская вобласць"
@@ -7012,17 +7012,6 @@
     "part_of": {
       "country": "Беларусь",
       "state": "Брэсцкая вобласць"
-    }
-  },
-  {
-    "type": [
-      "district",
-      "city"
-    ],
-    "name": "Полацк",
-    "part_of": {
-      "country": "Беларусь",
-      "state": "Віцебская вобласць"
     }
   },
   {
