@@ -9,8 +9,6 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-VOLUME /var/lib/neo4j/import
-
 ENV NEO4J_apoc_export_file_enabled=true \
     NEO4J_apoc_import_file_enabled=true \
     NEO4J_apoc_import_file_useneo4jconfig=true
@@ -25,8 +23,11 @@ RUN apt-get install wget -y &&\
     wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add - &&\
     echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list &&\
     apt-get update &&\
-    apt-get install neo4j=1:5.18.0 -y &&\
-    mv ./landmarks.json /var/lib/neo4j/import &&\
+    apt-get install neo4j=1:5.18.0 -y
+
+VOLUME /var/lib/neo4j/import
+
+RUN mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
     mv neo4j.conf /etc/neo4j/neo4j.conf &&\
