@@ -9,6 +9,8 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
+VOLUME /var/lib/neo4j/import
+
 ENV NEO4J_apoc_export_file_enabled=true \
     NEO4J_apoc_import_file_enabled=true \
     NEO4J_apoc_import_file_useneo4jconfig=true
