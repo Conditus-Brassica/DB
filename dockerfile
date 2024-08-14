@@ -27,7 +27,8 @@ RUN apt-get install wget -y &&\
 
 VOLUME /var/lib/neo4j/import
 
-RUN mv ./landmarks.json /var/lib/neo4j/import &&\
+RUN cd DB &&\
+    mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
     mv neo4j.conf /etc/neo4j/neo4j.conf &&\
