@@ -1,7 +1,5 @@
 FROM ubuntu:24.04
 
-WORKDIR service
-
 # install python (common)
 RUN apt-get update &&\
     apt-get install python3 -y &&\
