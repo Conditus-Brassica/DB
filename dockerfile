@@ -24,10 +24,6 @@ RUN apt-get install wget -y &&\
     echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list &&\
     apt-get update &&\
     apt-get install neo4j=1:5.18.0 -y
-
-VOLUME /var/lib/neo4j/import
-
-RUN cd DB &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
@@ -35,8 +31,6 @@ RUN cd DB &&\
     mv apoc.conf /etc/neo4j/apoc.conf &&\
     mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
     apt-get clean
-
-RUN touch /var/lib/neo4j/import/file
 
 EXPOSE 7474 7687
 
