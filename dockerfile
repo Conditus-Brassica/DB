@@ -9,6 +9,7 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
+VOLUME /var/lib/neo4j/import
 
 ENV NEO4J_apoc_export_file_enabled=true \
     NEO4J_apoc_import_file_enabled=true \
@@ -32,6 +33,8 @@ RUN apt-get install wget -y &&\
     mv apoc.conf /etc/neo4j/apoc.conf &&\
     mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
     apt-get clean
+
+RUN touch /var/lib/neo4j/import/file
 
 EXPOSE 7474 7687
 
