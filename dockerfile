@@ -1,13 +1,13 @@
 FROM ubuntu:24.04
 
+WORKDIR service
+
 # install python (common)
 RUN apt-get update &&\
     apt-get install python3 -y &&\
     apt-get install python3-venv -y &&\
     apt-get install git -y &&\
     apt-get clean
-
-VOLUME /var/lib/neo4j/import
 
 ENV NEO4J_apoc_export_file_enabled=true \
     NEO4J_apoc_import_file_enabled=true \
