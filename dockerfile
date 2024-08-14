@@ -36,8 +36,6 @@ EXPOSE 7474 7687
 
 WORKDIR DB
 
-VOLUME .
-
 CMD neo4j-admin dbms set-initial-password  ostisGovno &&\
     neo4j start &&\
     . .venv/bin/activate &&\
