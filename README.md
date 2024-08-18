@@ -12,5 +12,9 @@ docker build -t db_img .
 docker run -p 7474:7474 -p 7687:7687 db_img
 ```
 
+# Создание контейнера базы postgres
+
+Пока что необходимо создавать все вручную
+
 Посмотреть базу можно через браузер по адресу localhost:7474
 <img src="https://i.scdn.co/image/ab67616d0000b2730ce52f4ba340a1e459e6a978" Title="Vileyskiye cowboys">
