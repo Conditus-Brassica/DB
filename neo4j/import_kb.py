@@ -1093,7 +1093,7 @@ def run_cypher_scripts(
         print(f"Landmarks have been connected with map sectors in {datetime.datetime.now() - last_operation}", flush=True)
         last_operation = datetime.datetime.now()
 
-        print("Encoding regions and landmarks...")
+        print("Encoding regions and landmarks...", flush=True)
         if save_existing_id_codes:
             encoding_regions_and_landmarks_no_change_id_code(driver, base_dir)
         else:
