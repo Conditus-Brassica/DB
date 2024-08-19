@@ -19,7 +19,7 @@ RUN apt-get install wget -y &&\
     cd DB &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
-    pip install -r requirements.txt &&\
+    pip install -r ./neo4j/requirements.txt &&\
     wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add - &&\
     echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list &&\
     apt-get update &&\
