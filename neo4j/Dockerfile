@@ -27,8 +27,8 @@ RUN apt-get install wget -y &&\
     mv ./landmarks.json /var/lib/neo4j/import &&\
     mv ./map_sectors.json /var/lib/neo4j/import &&\
     mv ./regions.json /var/lib/neo4j/import &&\
-    mv neo4j.conf /etc/neo4j/neo4j.conf &&\
-    mv apoc.conf /etc/neo4j/apoc.conf &&\
+    mv ./neo4j/neo4j.conf /etc/neo4j/neo4j.conf &&\
+    mv ./neo4j/apoc.conf /etc/neo4j/apoc.conf &&\
     mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
     apt-get clean
 
@@ -40,6 +40,6 @@ CMD neo4j-admin dbms set-initial-password  ostisGovno &&\
     neo4j start &&\
     . .venv/bin/activate &&\
     echo "Importing DB ..." &&\
-    python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs save_existing_id_codes=True &&\
+    python3 ./neo4j/import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs save_existing_id_codes=True &&\
     echo "Done" &&\
     tail -f /dev/null

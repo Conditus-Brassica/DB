@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM pytorch/pytorch:2.4.0-cuda11.8-cudnn9-runtime
 
 WORKDIR service
 
@@ -9,9 +9,7 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-ENV NEO4J_apoc_export_file_enabled=true \
-    NEO4J_apoc_import_file_enabled=true \
-    NEO4J_apoc_import_file_useneo4jconfig=true
+# TODO
 
 RUN apt-get install wget -y &&\
     apt-get install gnupg -y &&\
