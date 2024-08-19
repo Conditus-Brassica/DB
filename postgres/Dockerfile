@@ -10,8 +10,8 @@ RUN apt-get update &&\
     apt-get clean
 
 RUN apt-get update &&\    
-    apt-get install postgresql &&\
-    apt-get install build-dep python-psycopg2 &&\
+    apt-get install postgresql -y &&\
+    apt-get install build-dep python-psycopg2 -y &&\
     git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     python3 -m venv .venv &&\
