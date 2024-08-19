@@ -12,7 +12,6 @@ RUN apt-get update &&\
 RUN DEBIAN_FRONTEND=noninteractive apt install postgresql -yq &&\
     git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
-    mv ./postgres/pg_ident.conf /etc/postgresql/14/main/pg_ident.conf &&\
     mv ./postgres/pg_hba.conf /etc/postgresql/14/main/pg_hba.conf &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
@@ -23,15 +22,11 @@ EXPOSE 5432
 
 WORKDIR DB
 
-CMD pg_ctlcluster 14 main start &&\
-    psql -U postgres postgres &&\
-    postgres=# ALTER USER postgres PASSWORD 'ostisGovno'; ALTER ROLE &&\
-    postgres=# \q &&\
+CMD CMD pg_ctlcluster 14 main start &&\
+    psql -U postgres postgres -c "ALTER USER postgres PASSWORD 'ostisGovno'"&&\
     . .venv/bin/activate &&\
     echo "Fill DB with embeddings..." &&\
-    python3 python3 ./postgres/import_embeddings_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_>
+    python3 postgres/import_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_user=neo4j neo4j_pass>
     echo "Done." &&\
     tail -f /dev/null
-    python3 python3 ./postgres/import_embeddings_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_user=neo4j neo4j_password=ostisGovno postgres_host=0.0.0.0 postgres_port=5432 postgres_user=postgres postgres_password=ostisGovno &&\
-    echo "Done." &&\
-    tail -f /dev/null
+
