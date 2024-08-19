@@ -26,7 +26,7 @@ CMD CMD pg_ctlcluster 14 main start &&\
     psql -U postgres postgres -c "ALTER USER postgres PASSWORD 'ostisGovno'"&&\
     . .venv/bin/activate &&\
     echo "Fill DB with embeddings..." &&\
-    python3 postgres/import_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_user=neo4j neo4j_pass>
+    python3 postgres/import_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_user=neo4j neo4j_password=ostisGovno postgres_host=0.0.0.0 postgres_port=5432 postgres_user=postgres postgres_password=ostisGovno &&\
     echo "Done." &&\
     tail -f /dev/null
 
