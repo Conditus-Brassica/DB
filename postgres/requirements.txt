@@ -1,6 +1,4 @@
 neo4j==5.18.0
 sqlalchemy
 transformers
-torch --index-url https://download.pytorch.org/whl/cu118
-torchvision --index-url https://download.pytorch.org/whl/cu118
-torchaudio --index-url https://download.pytorch.org/whl/cu118
+psycopg2-binary 

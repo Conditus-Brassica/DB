@@ -9,36 +9,25 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-# TODO
-
-RUN apt-get install wget -y &&\
-    apt-get install gnupg -y &&\
+RUN apt-get update &&\    
+    apt-get install postgresql &&\
+    apt-get install build-dep python-psycopg2 &&\
     git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
-    
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
-    pip install -r requirements.txt &&\
-    wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add - &&\
-    echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list &&\
-    apt-get update &&\
-    apt-get install neo4j=1:5.18.0 -y &&\
-    mv ./landmarks.json /var/lib/neo4j/import &&\
-    mv ./map_sectors.json /var/lib/neo4j/import &&\
-    mv ./regions.json /var/lib/neo4j/import &&\
-    mv neo4j.conf /etc/neo4j/neo4j.conf &&\
-    mv apoc.conf /etc/neo4j/apoc.conf &&\
-    mv /var/lib/neo4j/labs/apoc-5.18.0-core.jar /var/lib/neo4j/plugins &&\
+    pip install -r ./postgres/requirements.txt &&\
     apt-get clean
 
-EXPOSE 7474 7687
+EXPOSE 5432
 
 WORKDIR DB
 
-CMD neo4j-admin dbms set-initial-password  ostisGovno &&\
-    neo4j start &&\
+CMD sudo -u postgres psql &&\
+    postgres=# ALTER USER postgres PASSWORD 'ostisGovno'; ALTER ROLE &&\
+    postgres=# \q &&\
     . .venv/bin/activate &&\
-    echo "Importing DB ..." &&\
-    python3 import_kb.py user=neo4j password=ostisGovno host=localhost port=7687 regions_filename=regions.json landmarks_filename=landmarks.json map_sectors_filename=map_sectors.json base_dir=landmarks_dirs save_existing_id_codes=True &&\
-    echo "Done" &&\
+    echo "Fill DB with embeddings..." &&\
+    python3 python3 ./postgres/import_embeddings_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_user=neo4j neo4j_password=ostisGovno postgres_host=0.0.0.0 postgres_port=5432 postgres_user=postgres postgres_password=ostisGovno &&\
+    echo "Done." &&\
     tail -f /dev/null
