@@ -3,13 +3,13 @@
 Из этого репозитория нужно взять только dockerfile и собрать его: 
 
 ```
-docker build -t db_img .
+docker build -t neo4j-image .
 ```
 
 Запустить контейнер следующей командой: 
 
 ```
-docker run -p 7474:7474 -p 7687:7687 db_img
+docker run -p 7474:7474 -p 7687:7687 --name neo4j-db neo4j-image
 ```
 
 # Создание контейнера базы postgres
