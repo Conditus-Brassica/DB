@@ -22,7 +22,7 @@ EXPOSE 5432
 
 WORKDIR DB
 
-CMD CMD pg_ctlcluster 14 main start &&\
+CMD pg_ctlcluster 14 main start &&\
     psql -U postgres postgres -c "ALTER USER postgres PASSWORD 'ostisGovno'"&&\
     . .venv/bin/activate &&\
     echo "Fill DB with embeddings..." &&\
