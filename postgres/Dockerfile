@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.4.0-cuda11.8-cudnn9-runtime
+FROM ubuntu:22.04
 
 WORKDIR service
 
@@ -9,24 +9,36 @@ RUN apt-get update &&\
     apt-get install git -y &&\
     apt-get clean
 
-RUN DEBIAN_FRONTEND=noninteractive apt install postgresql -yq &&\
-    git clone https://github.com/Conditus-Brassica/DB.git &&\
+RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
-    mv ./postgres/pg_hba.conf /etc/postgresql/14/main/pg_hba.conf &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
-    pip install -r ./postgres/requirements.txt &&\
-    apt-get clean
+    pip3 install -r ./postgres/requirements.txt &&\
+    pip3 install torch torchvision torchaudio &&\
+    apt-get install -y \
+    wget \
+    curl &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql \
+    postgresql-contrib \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cd DB &&\
+    . .venv/bin/activate &&\
+    pip3 install --no-cache-dir psycopg2-binary
+
+USER postgres
+RUN /etc/init.d/postgresql start && \
+    psql --command "ALTER USER postgres PASSWORD 'ostisGovno';"
 
 EXPOSE 5432
 
 WORKDIR DB
 
-CMD pg_ctlcluster 14 main start &&\
-    psql -U postgres postgres -c "ALTER USER postgres PASSWORD 'ostisGovno'"&&\
+USER root
+
+CMD service postgresql start &&\
     . .venv/bin/activate &&\
     echo "Fill DB with embeddings..." &&\
-    python3 postgres/import_db.py json_path=./landmarks.json neo4j_host=0.0.0.0 neo4j_port=7687 neo4j_user=neo4j neo4j_password=ostisGovno postgres_host=0.0.0.0 postgres_port=5432 postgres_user=postgres postgres_password=ostisGovno &&\
+    python3 postgres/import_db.py json_path=./landmarks.json neo4j_host=neo4j-db neo4j_port=7687 neo4j_user=neo4j neo4j_password=ostisGovno postgres_host=127.0.0.1 postgres_port=5432 postgres_user=postgres postgres_password=ostisGovno &&\
     echo "Done." &&\
     tail -f /dev/null
-
