@@ -27,7 +27,7 @@ docker run --network=bridge custom-bridge-network -p 7474:7474 -p 7687:7687 --na
 Создание образа:
 
 ```
-docker build -t sql-img
+docker build -t sql-img .
 ```
 
 Запуск контейнера
