@@ -33,7 +33,7 @@ docker build -t sql-img .
 Запуск контейнера
 
 ```
-docker run --network=bridge custom-bridge-network -p 7688:7687 -p 5432:5432 --name sql-db sql-img
+docker run --network=custom-bridge-network -p 7688:7687 -p 5432:5432 --name sql-db sql-img
 ```
 
 **_можно добаить флаг `-d` чтобы освободить терминал_**
