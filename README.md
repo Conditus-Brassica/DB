@@ -17,7 +17,7 @@ docker build -t neo4j-image .
 Запустить контейнер следующей командой: 
 
 ```
-docker run --network=bridge custom-bridge-network -p 7474:7474 -p 7687:7687 --name neo4j-db neo4j-image
+docker run --network=custom-bridge-network -p 7474:7474 -p 7687:7687 --name neo4j-db neo4j-image
 ```
 
 Посмотреть базу можно через браузер по адресу localhost:7474
