@@ -1,6 +1,6 @@
 import sys
 import json
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizerFast, BertModel
 import torch
 import sqlalchemy
 import neo4j
@@ -51,14 +51,21 @@ def create_postgres_scheme(postgres_db_engine):
 def find_landmark_embedding(json_landmark, tokenizer, model, device):
     # Get the embedding tensor
     tokenized_landmark_summary = tokenizer(
-        json_landmark["summary"], return_tensors='pt', padding=True, truncation=True, max_length=512
+        json_landmark["summary"], 
+        padding="max_length", truncation=True,
+        max_length=512, stride=256,
+        return_tensors='pt', return_overflowing_tokens=True, 
     )
+
+    tokenized_landmark_summary.pop("overflow_to_sample_mapping")
 
     for key, value in tokenized_landmark_summary.items():
         tokenized_landmark_summary[key] = tokenized_landmark_summary[key].type(torch.int32).to(device)
 
     # mean of last hidden state of model is used as embedding
-    landmark_embedding_torch = model(**tokenized_landmark_summary).last_hidden_state.mean(dim=1)[0]
+    landmark_embedding_torch = model(**tokenized_landmark_summary).last_hidden_state.mean(dim=1)
+    print(landmark_embedding_torch.shape)
+    landmark_embedding_torch = landmark_embedding_torch.mean(dim=0)
 
     landmark_embedding = landmark_embedding_torch.detach().cpu().tolist()
     del landmark_embedding_torch
@@ -170,7 +177,7 @@ def main():
     print("neo4j is connected.", flush=True)
 
     device = define_torch_device()
-    tokenizer = BertTokenizer.from_pretrained("DeepPavlov/rubert-base-cased")
+    tokenizer = BertTokenizerFast.from_pretrained("DeepPavlov/rubert-base-cased")
     model = BertModel.from_pretrained("DeepPavlov/rubert-base-cased")
     model = model.to(device)
 
