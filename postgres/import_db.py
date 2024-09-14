@@ -63,9 +63,7 @@ def find_landmark_embedding(json_landmark, tokenizer, model, device):
         tokenized_landmark_summary[key] = tokenized_landmark_summary[key].type(torch.int32).to(device)
 
     # mean of last hidden state of model is used as embedding
-    landmark_embedding_torch = model(**tokenized_landmark_summary).last_hidden_state.mean(dim=1)
-    print(landmark_embedding_torch.shape)
-    landmark_embedding_torch = landmark_embedding_torch.mean(dim=0)
+    landmark_embedding_torch = model(**tokenized_landmark_summary).last_hidden_state.mean(dim=1).mean(dim=0)
 
     landmark_embedding = landmark_embedding_torch.detach().cpu().tolist()
     del landmark_embedding_torch
