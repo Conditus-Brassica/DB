@@ -14,7 +14,6 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
     pip3 install -r ./postgres/requirements.txt &&\
-    pip3 install torch torchvision torchaudio &&\
     apt-get install -y \
     wget \
     curl &&\
@@ -22,9 +21,6 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     postgresql-contrib \
     && rm -rf /var/lib/apt/lists/*
 
-RUN cd DB &&\
-    . .venv/bin/activate &&\
-    pip3 install --no-cache-dir psycopg2-binary
 
 USER postgres
 RUN /etc/init.d/postgresql start && \
