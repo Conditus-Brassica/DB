@@ -1,3 +1,4 @@
+# Author: Vodohleb04
 import sys
 import json
 from transformers import BertTokenizerFast, BertModel
@@ -59,7 +60,7 @@ def find_landmark_embedding(json_landmark, tokenizer, model, device):
 
     tokenized_landmark_summary.pop("overflow_to_sample_mapping")
 
-    for key, value in tokenized_landmark_summary.items():
+    for key in tokenized_landmark_summary.keys():
         tokenized_landmark_summary[key] = tokenized_landmark_summary[key].type(torch.int32).to(device)
 
     # mean of last hidden state of model is used as embedding
