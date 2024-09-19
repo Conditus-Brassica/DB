@@ -54,7 +54,7 @@ def find_landmark_embedding(json_landmark, tokenizer, model, device):
     tokenized_landmark_summary = tokenizer(
         json_landmark["summary"], 
         padding="max_length", truncation=True,
-        max_length=512, stride=256,
+        max_length=320, stride=160,
         return_tensors='pt', return_overflowing_tokens=True, 
     )
 
