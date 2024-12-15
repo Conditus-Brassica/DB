@@ -53,10 +53,10 @@ def create_postgres_scheme(postgres_db_engine):
             sqlalchemy.text(
                 """
                 CREATE TABLE IF NOT EXISTS general_crud.user_states(
-                    user_id: TEXT PRIMARY KEY,
-                    landmark_watch_state: FLOAT[],
-                    landmark_visit_state: FLOAT[],
-                    note_state: FLOAT[],
+                    user_id                 TEXT PRIMARY KEY,
+                    landmark_watch_state    FLOAT[],
+                    landmark_visit_state    FLOAT[],
+                    note_state              FLOAT[],
                 );
                 """
             )
