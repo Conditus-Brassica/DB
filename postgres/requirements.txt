@@ -1,6 +1,7 @@
 neo4j==5.18.0
 sqlalchemy
--i https://download.pytorch.org/whl/cpu torch
+-i https://download.pytorch.org/whl/cpu
+torch
 transformers
 psycopg2-binary 
 
