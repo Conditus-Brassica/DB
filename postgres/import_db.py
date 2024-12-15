@@ -48,6 +48,30 @@ def create_postgres_scheme(postgres_db_engine):
             )
         )
 
+        tx.execute(sqlalchemy.text("""CREATE SCHEMA general_crud;"""))
+        tx.execute(
+            sqlalchemy.text(
+                """
+                CREATE TABLE IF NOT EXISTS general_crud.user_states(
+                    user_id: TEXT PRIMARY KEY,
+                    landmark_watch_state: FLOAT[],
+                    landmark_visit_state: FLOAT[],
+                    note_state: FLOAT[],
+                );
+                """
+            )
+        )
+        tx.execute(
+            sqlalchemy.text(
+                """
+                CREATE INDEX IF NOT EXISTS user_id_hash_index
+                    ON general_crud.user_states
+                    USING hash
+                    (user_id);
+                """
+            )
+        )
+
 
 def find_landmark_embedding(json_landmark, tokenizer, model, device):
     # Get the embedding tensor
