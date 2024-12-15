@@ -13,7 +13,7 @@ RUN git clone https://github.com/Conditus-Brassica/DB.git &&\
     cd DB &&\
     python3 -m venv .venv &&\
     . .venv/bin/activate &&\
-    pip3 install -r ./postgres/requirements_torch.txt &&\
+    pip3 install -r ./postgres/torch_requirements.txt &&\
     pip3 install -r ./postgres/requirements.txt &&\
     apt-get install -y \
     wget \
