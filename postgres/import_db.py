@@ -56,7 +56,7 @@ def create_postgres_scheme(postgres_db_engine):
                     user_id                 TEXT PRIMARY KEY,
                     landmark_watch_state    FLOAT[],
                     landmark_visit_state    FLOAT[],
-                    note_state              FLOAT[],
+                    note_state              FLOAT[]
                 );
                 """
             )
